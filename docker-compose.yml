@@ -1,0 +1,190 @@
+version: '3.8'
+
+services:
+  # ------------------------------------------------------------------
+  # Dịch vụ Cơ sở dữ liệu cho Order Service
+  # ------------------------------------------------------------------
+  order-db:
+    image: postgres:15-alpine
+    container_name: order_db_container
+    environment:
+      POSTGRES_DB: order_service_clean_architecture
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432" # Port 5432 được map ra ngoài cho Order DB
+    volumes:
+      - order_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d order_service_clean_architecture"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ------------------------------------------------------------------
+  # Dịch vụ Cơ sở dữ liệu cho Restaurant Service
+  # ------------------------------------------------------------------
+  restaurant-db:
+    image: postgres:15-alpine
+    container_name: restaurant_db_container
+    environment:
+      POSTGRES_DB: restaurant_service_clean_architecture
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432" # Port 5433 được map ra ngoài (container vẫn là 5432)
+    volumes:
+      - restaurant_db_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d restaurant_service_clean_architecture"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ------------------------------------------------------------------
+  # Dịch vụ Order Service (Kết nối Order DB)
+  # ------------------------------------------------------------------
+  order-service:
+
+    container_name: order-service
+    build: 
+      context: .  # Build từ thư mục root, không phải ./order-service
+      dockerfile: order-service/Dockerfile
+    ports:
+      - "8081:8080"
+    depends_on:
+      order-db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/order_service_clean_architecture
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      SERVER_PORT: 8080
+
+  # # ------------------------------------------------------------------
+  # # Dịch vụ Restaurant Service (Kết nối Restaurant DB)
+  # # ------------------------------------------------------------------
+  restaurant-service:
+    container_name: restaurant-service
+    build: 
+      context: .  # Build từ thư mục root, không phải ./order-service
+      dockerfile: restaurant-service/Dockerfile
+    ports:
+      - "8082:8080"
+    depends_on:
+      restaurant-db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://restaurant-db:5432/restaurant_service_clean_architecture
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      SERVER_PORT: 8080
+  
+
+volumes:
+  order_db_data:
+  restaurant_db_data:
+
+
+
+
+
+
+# version: '3.8'
+
+# services:
+#   # ------------------------------------------------------------------
+#   # Dịch vụ Cơ sở dữ liệu cho Order Service (GIỮ NGUYÊN)
+#   # ------------------------------------------------------------------
+#   order-db:
+#     image: postgres:15-alpine
+#     container_name: order_db_container
+#     environment:
+#       POSTGRES_DB: order_service_clean_architecture
+#       POSTGRES_USER: user
+#       POSTGRES_PASSWORD: password
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - order_db_data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U user -d order_service_clean_architecture"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+
+#   # ------------------------------------------------------------------
+#   # Dịch vụ Cơ sở dữ liệu cho Restaurant Service (GIỮ NGUYÊN)
+#   # ------------------------------------------------------------------
+#   restaurant-db:
+#     image: postgres:15-alpine
+#     container_name: restaurant_db_container
+#     environment:
+#       POSTGRES_DB: restaurant_service_clean_architecture
+#       POSTGRES_USER: user
+#       POSTGRES_PASSWORD: password
+#     ports:
+#       - "5433:5432"
+#     volumes:
+#       - restaurant_db_data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U user -d restaurant_service_clean_architecture"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+
+#   # ------------------------------------------------------------------
+#   # Dịch vụ Order Service (CHUYỂN SANG DEV MODE)
+#   # ------------------------------------------------------------------
+#   order-service:
+#     container_name: order-service
+#     image: eclipse-temurin:21-jre-alpine # Sử dụng image JRE thay vì build
+#     ports:
+#       - "8081:8080"
+#     depends_on:
+#       order-db:
+#         condition: service_healthy
+#     environment:
+#       SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/order_service_clean_architecture
+#       SPRING_DATASOURCE_USERNAME: user
+#       SPRING_DATASOURCE_PASSWORD: password
+#       SERVER_PORT: 8080
+#     volumes:
+#       # Mount các file .class đã biên dịch
+#       - ./order-service/target/classes:/app/classes
+#       # Mount các file cấu hình (application.properties/yaml)
+#       - ./order-service/src/main/resources:/app/resources
+#     working_dir: /app
+#     # Chạy ứng dụng trực tiếp từ các file classes (dùng DevTools)
+#     command: java -cp "classes:dependency/*" com.example.DemoApplication
+#   # ------------------------------------------------------------------
+#   # Dịch vụ Restaurant Service (CHUYỂN SANG DEV MODE)
+#   # ------------------------------------------------------------------
+#   restaurant-service:
+#     container_name: restaurant-service
+#     image: eclipse-temurin:21-jre-alpine # Sử dụng image JRE thay vì build
+#     ports:
+#       - "8082:8080"
+#     depends_on:
+#       restaurant-db:
+#         condition: service_healthy
+#     environment:
+#       SPRING_DATASOURCE_URL: jdbc:postgresql://restaurant-db:5432/restaurant_service_clean_architecture
+#       SPRING_DATASOURCE_USERNAME: user
+#       SPRING_DATASOURCE_PASSWORD: password
+#       SERVER_PORT: 8080
+#     volumes:
+#       # Mount các file .class đã biên dịch
+#       - ./restaurant-service/target/classes:/app/classes
+#       # Mount các file cấu hình (application.properties/yaml)
+#       - ./restaurant-service/src/main/resources:/app/resources
+#     working_dir: /app
+#     # Chạy ứng dụng trực tiếp từ các file classes (dùng DevTools)
+#     command: java -cp "classes:dependency/*" com.example.DemoApplication
+
+# volumes:
+#   order_db_data:
+#   restaurant_db_data:
+
+

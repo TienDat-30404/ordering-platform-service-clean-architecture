@@ -1,0 +1,28 @@
+
+spring:
+  datasource:
+    url: jdbc:postgresql://order-db:5432/order_service_clean_architecture
+    username: postgres
+    password:
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update        # create, create-drop, update, none
+    show-sql: true            # log SQL ra console
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  # Optional: Log format dễ đọc hơn
+  jpa.properties.hibernate.format_sql: true
+
+server:
+  port: 8080
+
+restaurant-service:
+  # GIẢ ĐỊNH: Dịch vụ Nhà hàng đang chạy trên localhost:8081
+  url: http://localhost:8081 
+
+logging:
+  level:
+    com.example.demo.adapters.out.external.api.RestaurantServiceApi: DEBUG 
+    feign.Logger: DEBUG
