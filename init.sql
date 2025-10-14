@@ -5,11 +5,11 @@
 -- 1. Chèn dữ liệu vào bảng restaurants (5 Nhà hàng)
 -- -----------------------------------------------------------
 INSERT INTO restaurants (id, name, address, phone, status, rating, total_ratings, created_at, updated_at) VALUES
-(1, 'Burger Lửa - Chi Nhánh Trung Tâm', '99 Đường Hàm Nghi, Quận 1, TP.HCM', '0919001002', 'OPEN', 4.7, 1200, NOW(), NOW()),
-(2, 'Sushi Tokyo', '15 Lê Duẩn, Quận 1, TP.HCM', '0918888888', 'OPEN', 4.9, 2500, NOW(), NOW()),
-(3, 'Chè Cô Tám', '68 Phạm Ngũ Lão, Quận Gò Vấp, TP.HCM', '0903333333', 'OPEN', 4.6, 950, NOW(), NOW()),
-(4, 'Món Ý Pasta Mania', '200 Võ Văn Tần, Quận 3, TP.HCM', '0977444444', 'CLOSED', 4.3, 700, NOW(), NOW()),
-(5, 'Phở Hùng - Đặc Sản Bò', '10 Phan Văn Trị, Quận 5, TP.HCM', '0988555555', 'OPEN', 4.0, 600, NOW(), NOW());
+(1, 'Burger Lửa - Chi Nhánh Trung Tâm', '99 Đường Hàm Nghi, Quận 1, TP.HCM', '0919001002', 'ACTIVE', 4.7, 1200, NOW(), NOW()),
+(2, 'Sushi Tokyo', '15 Lê Duẩn, Quận 1, TP.HCM', '0918888888', 'ACTIVE', 4.9, 2500, NOW(), NOW()),
+(3, 'Chè Cô Tám', '68 Phạm Ngũ Lão, Quận Gò Vấp, TP.HCM', '0903333333', 'ACTIVE', 4.6, 950, NOW(), NOW()),
+(4, 'Món Ý Pasta Mania', '200 Võ Văn Tần, Quận 3, TP.HCM', '0977444444', 'ACTIVE', 4.3, 700, NOW(), NOW()),
+(5, 'Phở Hùng - Đặc Sản Bò', '10 Phan Văn Trị, Quận 5, TP.HCM', '0988555555', 'ACTIVE', 4.0, 600, NOW(), NOW());
 
 
 -- -----------------------------------------------------------

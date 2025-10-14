@@ -3,7 +3,7 @@ package com.example.demo.adapters.out.persistence.adapter;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.cache.annotation.Cacheable;
+// import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 
 import com.example.demo.adapters.out.persistence.mapper.MenuItemPersistenceMapper;
@@ -19,7 +19,7 @@ public class MenuItemRepositoryAdapter implements MenuItemRepositoryPort {
     private final MenuItemJpaRepository menuItemJpaRepository;
     private final MenuItemPersistenceMapper mapper;
 
-    @Cacheable(value = "courses")
+    // @Cacheable(value = "courses")
     public List<MenuItem> findAllById(List<Long> menuItemIds) {
         return menuItemJpaRepository.findAllById(menuItemIds)
                 .stream()

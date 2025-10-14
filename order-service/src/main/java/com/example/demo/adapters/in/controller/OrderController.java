@@ -146,4 +146,9 @@ public class OrderController {
 
         return ResponseEntity.status(HttpStatus.CREATED).build(); // 201 Created
     }
+
+    @GetMapping("/test")
+    public String test() {
+        return "Hello World 1234567777";
+    }
 }

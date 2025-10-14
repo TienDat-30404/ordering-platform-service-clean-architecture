@@ -77,6 +77,7 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
                 finalOrderItems,
                 new RestaurantId(command.getRestaurantId()));
 
+        
         // 5. Lưu Order Aggregate
         Order savedOrder = orderRepositoryPort.save(order);
 
