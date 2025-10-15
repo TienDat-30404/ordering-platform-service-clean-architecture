@@ -25,6 +25,7 @@
 
     <modules>
         <module>common-dtos</module>
+        <!-- <module>discovey_eureka</module> -->
         <module>order-service</module>
         <module>restaurant-service</module> 
     </modules>

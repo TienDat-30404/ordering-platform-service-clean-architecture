@@ -17,6 +17,8 @@ services:
       - "5433:5432"
     volumes:
       - order_db_data:/var/lib/postgresql/data
+    networks:
+      - microservices
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d order_service_clean_architecture"]
       interval: 10s
@@ -37,8 +39,8 @@ services:
       - "5434:5432"
     volumes:
       - restaurant_db_data:/var/lib/postgresql/data
-      # - ./sql/restaurant_service:/docker-entrypoint-initdb.d
-  
+    networks:
+      - microservices    
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d restaurant_service_clean_architecture"]
@@ -68,9 +70,12 @@ services:
       - ./order-service/target/classes:/app/classes
       - ./order-service/src/main/resources:/app/resources
       - ./order-service/target/dependency:/app/dependency
+    networks:
+      - microservices
     working_dir: /app
     # Chạy ứng dụng trực tiếp từ các file classes (dùng DevTools)
-    command: java -cp classes:dependency/* com.example.demo.DemoApplication
+    # command: java -cp classes:dependency/* com.example.demo.DemoApplication
+    command: ["java", "-cp", "classes:resources:dependency/*", "com.example.demo.DemoApplication"]
   # ------------------------------------------------------------------
   # Dịch vụ Restaurant Service (CHUYỂN SANG DEV MODE)
   # ------------------------------------------------------------------
@@ -93,13 +98,54 @@ services:
       - ./restaurant-service/target/classes:/app/classes
       - ./restaurant-service/src/main/resources:/app/resources
       - ./restaurant-service/target/dependency:/app/dependency
+    networks:
+      - microservices
     working_dir: /app
     # Chạy ứng dụng trực tiếp từ các file classes (dùng DevTools)
-    command: java -cp classes:dependency/* com.example.demo.DemoApplication
+    # command: java -cp classes:dependency/* com.example.demo.DemoApplication
+    command: ["java", "-cp", "classes:resources:dependency/*", "com.example.demo.DemoApplication"]
 
 
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    hostname: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - microservices
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 volumes:
   order_db_data:
   restaurant_db_data:
+  kafka-data:
 
 
+networks:
+  microservices:
+    driver: bridge
