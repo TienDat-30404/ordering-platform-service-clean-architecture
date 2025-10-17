@@ -5,7 +5,9 @@ spring:
     name: order-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/order_service_clean_architecture
+    # url: jdbc:postgresql://localhost:5432/order_service_clean_architecture
+    url: jdbc:postgresql://order-db:5432/order_service_clean_architecture
+
     username: postgres
     password:
     driver-class-name: org.postgresql.Driver

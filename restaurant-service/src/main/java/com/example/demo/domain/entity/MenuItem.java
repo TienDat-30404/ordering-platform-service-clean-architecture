@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 
 import com.example.demo.domain.valueobject.MenuItemId;
 import com.example.demo.domain.valueobject.RestaurantId;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class MenuItem {
     private MenuItemId id;
@@ -13,13 +15,14 @@ public class MenuItem {
     private String description;
     private BigDecimal price;
     private String category;
-    private Boolean available;
+    private boolean available;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     public MenuItem() {}
 
+    @JsonCreator
     public MenuItem(MenuItemId id, RestaurantId restaurantId, String name, String description, BigDecimal price, String category, Boolean available, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        this.id = id;
+         this.id = id;
         this.restaurantId = restaurantId;
         this.name = name;
         this.description = description;

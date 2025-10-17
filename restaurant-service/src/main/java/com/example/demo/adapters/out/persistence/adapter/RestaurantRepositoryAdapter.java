@@ -2,6 +2,7 @@ package com.example.demo.adapters.out.persistence.adapter;
 
 import java.util.Optional;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 
 import com.example.demo.adapters.out.persistence.entity.RestaurantJpaEntity;
@@ -20,11 +21,12 @@ public class RestaurantRepositoryAdapter implements RestaurantRepositoryPort {
     private final RestaurantPersistenceMapper mapper;
 
     @Override
+    @Cacheable(value = "restaurant", key = "#id.value()")
     public Optional<Restaurant> findById(RestaurantId id) {
-
+        System.out.println("Idddddddddddddddddddddddddd" + id);
         return repository.findById(id.value())
                 .map(mapper::toDomainRestaurant);
-                // .orElseThrow(() -> new Restaurant.OrderDomainException(
-                //         "Order with ID " + orderId + " not found."));
+        // .orElseThrow(() -> new Restaurant.OrderDomainException(d
+        // "Order with ID " + orderId + " not found."));
     }
 }

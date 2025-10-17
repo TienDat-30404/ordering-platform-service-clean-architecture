@@ -7,6 +7,8 @@ import java.util.List;
 
 import com.example.demo.domain.valueobject.RestaurantId;
 import com.example.demo.domain.valueobject.RestaurantStatus;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Restaurant {
     private RestaurantId id;
@@ -22,10 +24,18 @@ public class Restaurant {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public Restaurant(RestaurantId id, String name, String address, String phone, RestaurantStatus status,
-            BigDecimal rating,
-            Integer totalRatings,
-            List<MenuItem> menu) {
+    @JsonCreator
+    public Restaurant(@JsonProperty("id") RestaurantId id,
+            @JsonProperty("name") String name,
+            @JsonProperty("address") String address,
+            @JsonProperty("phone") String phone,
+            @JsonProperty("status") RestaurantStatus status,
+            @JsonProperty("rating") BigDecimal rating,
+            @JsonProperty("totalRatings") Integer totalRatings,
+            @JsonProperty("menu") List<MenuItem> menu,
+            @JsonProperty("createdAt") LocalDateTime createdAt, // 👈 Bao gồm cả 2 trường này
+            @JsonProperty("updatedAt") LocalDateTime updatedAt
+            ) {
         this.id = id;
         this.name = name;
         this.address = address;
@@ -34,6 +44,8 @@ public class Restaurant {
         this.rating = rating;
         this.totalRatings = totalRatings;
         this.menu = menu;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     public RestaurantId getId() {

@@ -8,3 +8,6 @@ eureka:
   client:
     register-with-eureka: false  # Không tự đăng ký chính nó
     fetch-registry: false  # Không cần lấy danh sách service từ chính nó
+
+  server:
+    enable-self-preservation: false

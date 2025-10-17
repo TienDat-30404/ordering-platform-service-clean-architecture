@@ -87,6 +87,8 @@ services:
     depends_on:
       restaurant-db:
         condition: service_healthy
+      redis: 
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://restaurant-db:5432/restaurant_service_clean_architecture
       SPRING_DATASOURCE_USERNAME: user
@@ -94,6 +96,8 @@ services:
       SERVER_PORT: 8080
       SPRING_DEVTOOLS_RESTART_ENABLED: "true"
       MAIN_APP_CLASS: com.example.demo.DemoApplication
+      SPRING_DATA_REDIS_HOST: redis       # <<< Tên biến môi trường CHÍNH XÁC
+      SPRING_DATA_REDIS_PORT: 6379
     volumes:
       - ./restaurant-service/target/classes:/app/classes
       - ./restaurant-service/src/main/resources:/app/resources
@@ -140,6 +144,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  redis:
+    container_name: redis-clean-architecture
+    image: redis:7
+    ports:
+      - "6379:6379"
+    networks:
+      - microservices
+
 volumes:
   order_db_data:
   restaurant_db_data:

@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.example.common_dtos.dto.ItemValidationRequest;
@@ -25,14 +26,13 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @Slf4j 
-public class MenuItemValidationUseCaseImpl implements ValidateMenuItemUseCase {
+public class ValidateMenuItemUseCaseImpl implements ValidateMenuItemUseCase {
     
     private final RestaurantRepositoryPort restaurantRepository;
 
-    @Override
+    // @Override
     public List<ItemValidationResponse> validateItems(ItemValidationRequest request) {
         List<ItemValidationResponse> responses = new ArrayList<>();
-        
         // 1. Load Restaurant Aggregate
         Optional<Restaurant> restaurantOpt = restaurantRepository.findById(new RestaurantId(request.getRestaurantId()));
         if (restaurantOpt.isEmpty()) {
@@ -42,7 +42,7 @@ public class MenuItemValidationUseCaseImpl implements ValidateMenuItemUseCase {
             }
             return responses;
         }
-
+        System.out.println("restautantOpt" + restaurantOpt);
         Restaurant restaurant = restaurantOpt.get();
         
         // 2. Tối ưu hóa: Chuyển List thành Map. (O(N) initial cost)
@@ -50,7 +50,6 @@ public class MenuItemValidationUseCaseImpl implements ValidateMenuItemUseCase {
         Map<MenuItemId, MenuItem> menuMap = restaurant.getMenu().stream()
             .collect(Collectors.toMap(MenuItem::getId, Function.identity()));
         
-        System.out.println("menuMapppp" + menuMap);
         // 3. Duyệt qua từng item và kiểm tra trạng thái
         for (Long itemId : request.getMenuItemIds()) {
             MenuItemId menuItemId = new MenuItemId(itemId); 

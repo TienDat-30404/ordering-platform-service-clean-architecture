@@ -2,6 +2,8 @@
 spring:
   datasource:
     url: jdbc:postgresql://restaurant-db:5432/restaurant_service_clean_architecture
+    # url: jdbc:postgresql://localhost:5432/restaurant_service_clean_architecture
+
     username: postgres
     password:
     driver-class-name: org.postgresql.Driver
@@ -13,15 +15,32 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     defer-datasource-initialization : true
 
-  # redis:
-  #   host: localhost    
-  #   port: 6379
+  redis:
+    host: redis
+    port: 6379
 
   sql.init.mode : always  # Luôn chạy file schema.sql và data.sql khi khởi động
 
 
   # Optional: Log format dễ đọc hơn
   jpa.properties.hibernate.format_sql: true
+
+logging:
+  level:
+    root: INFO
+    com.example.demo: INFO
+
+
+# eureka:
+#   client:
+#     service-url:
+#       defaultZone: http://localhost:8761/eureka/
+#     register-with-eureka: true
+#     fetch-registry: true
+#   instance:
+#     prefer-ip-address: true
+#     instance-id: ${spring.application.name}:${spring.application.instance_id:${server.port}}
+
 
 server:
   port: 8081

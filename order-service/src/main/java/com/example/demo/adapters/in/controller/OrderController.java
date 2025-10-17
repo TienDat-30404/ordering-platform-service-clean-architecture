@@ -78,7 +78,7 @@ public class OrderController {
 
     // cập nhât đơn hàng - xóa sản phẩm
     @PatchMapping("/{orderId}/remove-items")
-    public ResponseEntity<TrackOrderResponse> removeItemsFromOrder(
+    public ResponseEntity<TrackOrderResponse> removeItemsFromOrder( 
             @PathVariable("orderId") Long orderId,
             @RequestBody RemoveItemsCommand command) {
         command.setOrderId(orderId);
