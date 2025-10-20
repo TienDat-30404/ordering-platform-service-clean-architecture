@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
 import com.example.common_dtos.dto.ItemValidationRequest;
 import com.example.common_dtos.dto.ItemValidationResponse;
 import com.example.demo.application.ports.input.ValidateMenuItemUseCase;
@@ -30,6 +31,7 @@ public class MenuItemValidationUseCaseImpl implements ValidateMenuItemUseCase {
     private final RestaurantRepositoryPort restaurantRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<ItemValidationResponse> validateItems(ItemValidationRequest request) {
         List<ItemValidationResponse> responses = new ArrayList<>();
         

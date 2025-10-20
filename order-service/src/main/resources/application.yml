@@ -1,5 +1,22 @@
 
 spring:
+  order:
+    saga:
+      reply:
+        topic: order.saga.reply
+    service:
+      group: order-service-group
+
+  kafka:
+    bootstrap-servers: kafka:9092   # tên service trong docker-compose
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: order-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
   datasource:
     url: jdbc:postgresql://order-db:5432/order_service_clean_architecture
     username: postgres

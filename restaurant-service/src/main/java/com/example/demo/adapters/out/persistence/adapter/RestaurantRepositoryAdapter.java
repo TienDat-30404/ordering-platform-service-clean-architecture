@@ -1,30 +1,27 @@
 package com.example.demo.adapters.out.persistence.adapter;
 
 import java.util.Optional;
-
 import org.springframework.stereotype.Repository;
-
-import com.example.demo.adapters.out.persistence.entity.RestaurantJpaEntity;
+import org.springframework.transaction.annotation.Transactional;
 import com.example.demo.adapters.out.persistence.mapper.RestaurantPersistenceMapper;
 import com.example.demo.adapters.out.persistence.repository.RestaurantJpaRepository;
 import com.example.demo.application.ports.output.RestaurantRepositoryPort;
 import com.example.demo.domain.entity.Restaurant;
 import com.example.demo.domain.valueobject.RestaurantId;
-
 import lombok.RequiredArgsConstructor;
 
 @Repository
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class RestaurantRepositoryAdapter implements RestaurantRepositoryPort {
-    private final RestaurantJpaRepository repository;
+
+    private final RestaurantJpaRepository repo;
     private final RestaurantPersistenceMapper mapper;
 
     @Override
     public Optional<Restaurant> findById(RestaurantId id) {
-
-        return repository.findById(id.value())
+        Long pk = id.value();                  // record -> value()
+        return repo.findByIdWithMenu(pk)       // ✅ BẮT BUỘC dùng method này
                 .map(mapper::toDomainRestaurant);
-                // .orElseThrow(() -> new Restaurant.OrderDomainException(
-                //         "Order with ID " + orderId + " not found."));
     }
 }

@@ -1,0 +1,23 @@
+﻿spring:
+  application:
+    name: payment-service
+
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: payment-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    org.springframework.kafka: INFO
+    com.example.demo: DEBUG

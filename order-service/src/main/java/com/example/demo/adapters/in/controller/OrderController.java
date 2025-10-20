@@ -3,8 +3,7 @@ package com.example.demo.adapters.in.controller;
 import java.util.List;
 import java.util.Map;
 
-import javax.sound.midi.Track;
-
+import com.example.demo.order_messaging.publisher.OrderEventPublisherAdapter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,7 +12,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,7 +32,7 @@ import com.example.demo.application.ports.input.GetOrderHistoryUseCase;
 import com.example.demo.application.ports.input.OrderStatisticsUseCase;
 import com.example.demo.application.ports.input.RateOrderUseCase;
 import com.example.demo.application.ports.input.RemoveItemsUseCase;
-
+import com.example.demo.application.orchestrator.OrderOrchestratorService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -42,6 +40,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class OrderController {
 
+    private final OrderEventPublisherAdapter publisher;
     private final GetAllOrdersUseCase getAllOrdersUseCase;
     private final CreateOrderUseCase createOrderUseCase;
     private final AddItemsUseCase addItemsToOrderUseCase;
@@ -50,7 +49,7 @@ public class OrderController {
     private final OrderStatisticsUseCase orderStatisticsUseCase;
     private final ApplyVoucherUseCase applyVoucherUseCase;
     private final RateOrderUseCase rateOrderUseCase;
-
+    private final OrderOrchestratorService orchestratorService;
     // danh sách đơn hàng
     @GetMapping
     public ResponseEntity<List<TrackOrderResponse>> getAllOrders() {
@@ -60,10 +59,16 @@ public class OrderController {
 
     // tạo đơn hàng
     @PostMapping
-    public ResponseEntity<TrackOrderResponse> createOrder(
-            @RequestBody CreateOrderCommand command) {
-        TrackOrderResponse response = createOrderUseCase.createOrder(command);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<TrackOrderResponse> createOrder(@RequestBody CreateOrderCommand command) {
+        TrackOrderResponse res = createOrderUseCase.createOrder(command); // lưu PENDING
+
+        orchestratorService.startCreateOrderSagaFromCommand(
+                res.getId().toString(),
+                res.getRestaurantId(),
+                command.getItems()
+        );
+
+        return ResponseEntity.ok(res);
     }
 
     // // cập nhật đơn hàng - thêm sản phẩm

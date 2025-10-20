@@ -63,6 +63,7 @@ public class OrderMapperImpl implements OrderMapper {
         TrackOrderResponse response = new TrackOrderResponse();
         response.setId(order.getId().value());
         response.setUserId(order.getUserId().value());
+        response.setRestaurantId(order.getRestaurantId().value());
         response.setAmount(order.getAmount());
         response.setStatus(order.getStatus().getName());
         response.setCreatedAt(LocalDateTime.ofInstant(order.getCreatedAt(), ZoneId.systemDefault()));

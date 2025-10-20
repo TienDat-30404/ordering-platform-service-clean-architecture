@@ -10,6 +10,7 @@ import lombok.Data;
 public class TrackOrderResponse {
     private Long id;
     private Long userId;
+    private Long restaurantId;
     private BigDecimal amount;
     private String status;
     private LocalDateTime createdAt;
