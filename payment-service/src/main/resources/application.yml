@@ -21,3 +21,12 @@ logging:
     root: INFO
     org.springframework.kafka: INFO
     com.example.demo: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    prometheus:
+      enabled: true

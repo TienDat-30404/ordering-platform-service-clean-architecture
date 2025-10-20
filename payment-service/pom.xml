@@ -27,6 +27,7 @@
     <!-- Import BOM Spring Boot & Spring Cloud (đồng bộ version) -->
     <dependencyManagement>
         <dependencies>
+
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
@@ -45,6 +46,14 @@
     </dependencyManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
         <!-- Web + Kafka -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

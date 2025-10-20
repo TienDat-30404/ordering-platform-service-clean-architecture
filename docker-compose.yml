@@ -1,9 +1,20 @@
 version: '3.8'
 
 services:
-  # ------------------------------------------------------------------
-  # Databases
-  # ------------------------------------------------------------------
+  # -------------------- Monitoring --------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml
+    command: ['--config.file=/etc/prometheus/prometheus.yml']
+    restart: unless-stopped
+    networks: [microservice-net]
+
+  # -------------------- Databases ---------------------
   order-db:
     image: postgres:15-alpine
     container_name: order_db_container
@@ -20,6 +31,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    networks: [microservice-net]
 
   restaurant-db:
     image: postgres:15-alpine
@@ -37,6 +50,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    networks: [microservice-net]
 
   payment-db:
     image: postgres:15-alpine
@@ -54,15 +69,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    networks: [microservice-net]
 
-  # ------------------------------------------------------------------
-  # Services
-  # ------------------------------------------------------------------
+  # -------------------- Services ----------------------
   order-service:
     container_name: order-service
     image: eclipse-temurin:21-jre-alpine
     ports:
-      - "8081:8080"
+      - "8081:8080"  # host:container
     depends_on:
       order-db:
         condition: service_healthy
@@ -80,6 +95,8 @@ services:
       - ./order-service/target/dependency:/app/dependency
     working_dir: /app
     command: ["java","-cp","classes:resources:dependency/*","com.example.demo.DemoApplication"]
+    restart: unless-stopped
+    networks: [microservice-net]
 
   restaurant-service:
     container_name: restaurant-service
@@ -103,6 +120,8 @@ services:
       - ./restaurant-service/target/dependency:/app/dependency
     working_dir: /app
     command: ["java","-cp","classes:resources:dependency/*","com.example.demo.DemoApplication"]
+    restart: unless-stopped
+    networks: [microservice-net]
 
   payment-service:
     container_name: payment-service
@@ -126,10 +145,10 @@ services:
       - ./payment-service/target/dependency:/app/dependency
     working_dir: /app
     command: ["java","-cp","classes:resources:dependency/*","com.example.demo.DemoApplication"]
+    restart: unless-stopped
+    networks: [microservice-net]
 
-  # ------------------------------------------------------------------
-  # Kafka & Zookeeper
-  # ------------------------------------------------------------------
+  # -------------------- Kafka & Zookeeper --------------
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -137,6 +156,8 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
     ports:
       - "2181:2181"
+    restart: unless-stopped
+    networks: [microservice-net]
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -154,11 +175,15 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    restart: unless-stopped
+    networks: [microservice-net]
 
-# ------------------------------------------------------------------
-# Volumes
-# ------------------------------------------------------------------
+# -------------------- Volumes & Network ----------------
 volumes:
   order_db_data:
   restaurant_db_data:
   payment_db_data:
+
+networks:
+  microservice-net:
+    driver: bridge

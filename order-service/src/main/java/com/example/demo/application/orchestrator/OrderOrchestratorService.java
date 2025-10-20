@@ -92,7 +92,14 @@ public class OrderOrchestratorService {
         log.info("[SAGA->RESTAURANT] topic={} key={} headers={} payload={}",
                 "restaurant.validate.command", orderId, headers, json);
 
-        publisher.publish("restaurant.validate.command", orderId, json, headers);
+        try {
+            publisher.publish("restaurant.validate.command", orderId, json, headers); // đã có retry
+        } catch (RuntimeException ex) {
+            // Không rethrow để request không fail ngay; chỉ log để theo dõi retry trong logs
+            log.error("[SAGA] publish VALIDATE_MENU_ITEMS failed, will keep retrying via publisher. orderId={} err={}",
+                    orderId, ex.toString(), ex);
+        }
+
     }
 
     // ===== Reply handler (giữ nguyên) =====

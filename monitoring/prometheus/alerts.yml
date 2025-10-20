@@ -1,0 +1,11 @@
+groups:
+  - name: order-service.rules
+    rules:
+      - alert: OrderPublishFailuresHigh
+        expr: increase(order_publish_failure_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Kafka publish failures high on order-service"
+          description: "More than 5 publish failures in 5 minutes (topic={{ $labels.topic }}, eventType={{ $labels.eventType }})"
