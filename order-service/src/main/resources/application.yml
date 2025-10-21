@@ -1,8 +1,34 @@
-
 spring:
 
   application:
     name: order-service
+  order:
+    saga:
+      reply:
+        topic: order.saga.reply
+    service:
+      group: order-service-group
+
+  kafka:
+    # bootstrap-servers: kafka:9092   # tên service trong docker-compose
+    bootstrap-servers: localhost:9092   # tên service trong docker-compose
+
+    producer:
+      acks: all
+      retries: 0                       # app đã tự retry
+      delivery-timeout-ms: 120000
+      request-timeout-ms: 30000
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 1
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+    consumer:
+      group-id: order-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
   datasource:
     url: jdbc:postgresql://localhost:5432/order_service_clean_architecture
@@ -17,16 +43,15 @@ spring:
       ddl-auto: update        # create, create-drop, update, none
     show-sql: true            # log SQL ra console
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-
-  # Optional: Log format dễ đọc hơn
-  jpa.properties.hibernate.format_sql: true
+    properties:
+      hibernate.format_sql: true  # format SQL dễ đọc hơn
 
 server:
   port: 8080
 
 restaurant-service:
   # GIẢ ĐỊNH: Dịch vụ Nhà hàng đang chạy trên localhost:8081
-  url: http://localhost:8081 
+  url: http://localhost:8081
 
 eureka:
   client:
@@ -39,7 +64,14 @@ eureka:
 
 logging:
   level:
-    com.example.demo.adapters.out.external.api.RestaurantServiceApi: DEBUG 
+    com.example.demo.adapters.out.external.api.RestaurantServiceApi: DEBUG
     feign.Logger: DEBUG
 
-
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    prometheus:
+      enabled: true

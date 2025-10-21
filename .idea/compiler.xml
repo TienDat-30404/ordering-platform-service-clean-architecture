@@ -11,6 +11,7 @@
         </processorPath>
         <module name="common-dtos" />
         <module name="order-service" />
+        <module name="payment-service" />
         <module name="restaurant-service" />
       </profile>
     </annotationProcessing>
@@ -19,6 +20,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="common-dtos" options="-parameters" />
       <module name="order-service" options="-parameters" />
+      <module name="payment-service" options="-parameters" />
       <module name="restaurant-service" options="-parameters" />
     </option>
   </component>

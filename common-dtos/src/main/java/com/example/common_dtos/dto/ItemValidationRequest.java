@@ -5,7 +5,7 @@ import java.util.List;
 
 import lombok.Data;
 
-@Data
+@Data   
 public class ItemValidationRequest {
     private Long restaurantId;
     private List<Long> menuItemIds;

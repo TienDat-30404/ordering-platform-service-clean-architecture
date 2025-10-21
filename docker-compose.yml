@@ -1,33 +1,39 @@
-
-
 version: '3.8'
 
 services:
-  # ------------------------------------------------------------------
-  # Dịch vụ Cơ sở dữ liệu cho Order Service (GIỮ NGUYÊN)
-  # ------------------------------------------------------------------a
+  # -------------------- Monitoring --------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml
+    command: ['--config.file=/etc/prometheus/prometheus.yml']
+    restart: unless-stopped
+    networks: [microservice-net]
+
+  # -------------------- Databases ---------------------
   order-db:
     image: postgres:15-alpine
     container_name: order_db_container
     environment:
-      POSTGRES_DB: order_service_clean_architecture 
+      POSTGRES_DB: order_service_clean_architecture
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
     ports:
       - "5433:5432"
     volumes:
       - order_db_data:/var/lib/postgresql/data
-    networks:
-      - microservices
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d order_service_clean_architecture"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    networks: [microservice-net]
 
-  # ------------------------------------------------------------------
-  # Dịch vụ Cơ sở dữ liệu cho Restaurant Service (GIỮ NGUYÊN)
-  # ------------------------------------------------------------------
   restaurant-db:
     image: postgres:15-alpine
     container_name: restaurant_db_container
@@ -39,49 +45,63 @@ services:
       - "5434:5432"
     volumes:
       - restaurant_db_data:/var/lib/postgresql/data
-    networks:
-      - microservices    
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d restaurant_service_clean_architecture"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    networks: [microservice-net]
 
-  # ------------------------------------------------------------------
-  # Dịch vụ Order Service (CHUYỂN SANG DEV MODE)
-  # ------------------------------------------------------------------
+  payment-db:
+    image: postgres:15-alpine
+    container_name: payment_db_container
+    environment:
+      POSTGRES_DB: payment_service_clean_architecture
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5435:5432"
+    volumes:
+      - payment_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d payment_service_clean_architecture"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks: [microservice-net]
+
+  # -------------------- Services ----------------------
   order-service:
     container_name: order-service
-    image: eclipse-temurin:21-jre-alpine # Sử dụng image JRE thay vì build
+    image: eclipse-temurin:21-jre-alpine
     ports:
-      - "8081:8080"
+      - "8081:8080"  # host:container
     depends_on:
       order-db:
         condition: service_healthy
+      kafka:
+        condition: service_started
     environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/order_service_clean_architecture
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: password
       SERVER_PORT: 8080
-      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
-      MAIN_APP_CLASS: com.example.demo.DemoApplication
     volumes:
       - ./order-service/target/classes:/app/classes
       - ./order-service/src/main/resources:/app/resources
       - ./order-service/target/dependency:/app/dependency
-    networks:
-      - microservices
     working_dir: /app
-    # Chạy ứng dụng trực tiếp từ các file classes (dùng DevTools)
-    # command: java -cp classes:dependency/* com.example.demo.DemoApplication
-    command: ["java", "-cp", "classes:resources:dependency/*", "com.example.demo.DemoApplication"]
-  # ------------------------------------------------------------------
-  # Dịch vụ Restaurant Service (CHUYỂN SANG DEV MODE)
-  # ------------------------------------------------------------------
+    command: ["java","-cp","classes:resources:dependency/*","com.example.demo.DemoApplication"]
+    restart: unless-stopped
+    networks: [microservice-net]
+
   restaurant-service:
     container_name: restaurant-service
-    image: eclipse-temurin:21-jre-alpine # Sử dụng image JRE thay vì build
+    image: eclipse-temurin:21-jre-alpine
     ports:
       - "8082:8080"
     depends_on:
@@ -89,7 +109,10 @@ services:
         condition: service_healthy
       redis: 
         condition: service_started
+      kafka:
+        condition: service_started
     environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_DATASOURCE_URL: jdbc:postgresql://restaurant-db:5432/restaurant_service_clean_architecture
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: password
@@ -102,13 +125,67 @@ services:
       - ./restaurant-service/target/classes:/app/classes
       - ./restaurant-service/src/main/resources:/app/resources
       - ./restaurant-service/target/dependency:/app/dependency
-    networks:
-      - microservices
     working_dir: /app
     # Chạy ứng dụng trực tiếp từ các file classes (dùng DevTools)
     # command: java -cp classes:dependency/* com.example.demo.DemoApplication
-    command: ["java", "-cp", "classes:resources:dependency/*", "com.example.demo.DemoApplication"]
+    # command: ["java", "-cp", "classes:resources:dependency/*", "com.example.demo.DemoApplication"]
+    command: ["java","-cp","classes:resources:dependency/*","com.example.demo.DemoApplication"]
+    restart: unless-stopped
+    networks: [microservice-net]
 
+  payment-service:
+    container_name: payment-service
+    image: eclipse-temurin:21-jre-alpine
+    ports:
+      - "8083:8080"
+    depends_on:
+      payment-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment_service_clean_architecture
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      SERVER_PORT: 8080
+    volumes:
+      - ./payment-service/target/classes:/app/classes
+      - ./payment-service/src/main/resources:/app/resources
+      - ./payment-service/target/dependency:/app/dependency
+    working_dir: /app
+    command: ["java","-cp","classes:resources:dependency/*","com.example.demo.DemoApplication"]
+    restart: unless-stopped
+    networks: [microservice-net]
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "2181:2181"
+    restart: unless-stopped
+    networks: [microservice-net]
+
+  # kafka:
+  #   image: confluentinc/cp-kafka:7.5.0
+  #   container_name: kafka
+  #   depends_on:
+  #     - zookeeper
+  #   ports:
+  #     - "29092:29092"
+  #     - "9092:9092"
+  #   environment:
+  #     KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+  #     KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
+  #     KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
+  #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+  #     KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+  #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  #     KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+  #   restart: unless-stopped
+  #   networks: [microservice-net]
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -136,8 +213,7 @@ services:
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
     volumes:
       - kafka-data:/var/lib/kafka/data
-    networks:
-      - microservices
+    networks: [microservice-net]
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
@@ -145,20 +221,23 @@ services:
       timeout: 5s
       retries: 5
 
+  
+
   redis:
     container_name: redis-clean-architecture
     image: redis:7
     ports:
       - "6379:6379"
-    networks:
-      - microservices
+    networks: [microservice-net]
 
 volumes:
   order_db_data:
   restaurant_db_data:
   kafka-data:
+  payment_db_data:
+
 
 
 networks:
-  microservices:
+  microservice-net:
     driver: bridge
