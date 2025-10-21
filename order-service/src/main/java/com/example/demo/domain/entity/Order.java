@@ -210,7 +210,6 @@ public class Order {
         }
         // 2. Kiểm tra việc đánh giá lặp lại: Chỉ cho phép rating 1 lần
         if (this.hasBeenRated) {
-            System.out.println("lỗiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii");
             throw new OrderDomainException("This order has already been rated.");
         }
     }

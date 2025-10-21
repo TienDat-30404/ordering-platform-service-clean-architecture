@@ -17,14 +17,32 @@ spring:
         locator:
           enabled: true
           lower-case-service-id: true
+
+  
       routes:
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/v1/orders
+            - Method=POST
+          filters: 
+            - AddRequestHeader=X-Internal-Token, secret-gateway-key
+
+            - name: RequestRateLimiter
+              args:
+                key-resolver: '#{@customerIdKeyResolver}'
+                redis-rate-limiter.replenishRate: 1      
+                redis-rate-limiter.burstCapacity: 60     
+                redis-rate-limiter.requestedTokens: 5
 
         - id: order-service
           uri: lb://order-service
           predicates:
             - Path=/api/v1/orders/**
+            - Method=GET,PUT,DELETE,PATCH,POST
           filters: 
             - AddRequestHeader=X-Internal-Token, secret-gateway-key
+
 
         - id: restaurant-service
           uri : lb://restaurant-service
@@ -49,5 +67,5 @@ logging:
     org.springframework.cloud.gateway: DEBUG
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: eF4$Kf!3v9XzQrL8mT592hJxw@0N1GzD
 

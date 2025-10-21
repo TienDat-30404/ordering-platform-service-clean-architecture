@@ -22,9 +22,7 @@ public class GetMenuItemsUseCaseImpl implements GetMenuItemsUseCase {
 
   
     public List<MenuItemResponse> getAllMenuItemsByIds(List<Long> menuItemIds) {
-        System.out.println("Toi la usecase get menuitem ");
         List<MenuItem> menuItems = menuItemRepositoryPort.findAllById(menuItemIds);
-        System.out.println("menuItem" + menuItems);
         return mapper.toListMenuItemDTO(menuItems);
     }
 

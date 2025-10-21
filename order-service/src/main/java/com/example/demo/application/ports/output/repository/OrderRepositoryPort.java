@@ -15,4 +15,6 @@ public interface OrderRepositoryPort {
     Order findById(OrderId id);
     List<Order> findByUserId(UserId userId);
     OrderStatistics getStatistics();
+    Order findByIdAndUserId(OrderId orderId, UserId userId);
+
 }

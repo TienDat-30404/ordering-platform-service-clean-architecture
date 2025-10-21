@@ -26,8 +26,8 @@ public class GetOrderHistoryUseCaseImpl implements GetOrderHistoryUseCase {
     private final OrderMapper orderMapper;
     private final RestaurantDataProviderPort restaurantDataProviderPort;
 
-    public List<TrackOrderResponse> getOrdersByCustomer(GetOrdersByCustomerQuery query) {
-        UserId userId = new UserId(query.getUserId());
+    public List<TrackOrderResponse> getOrdersByCustomer(Long id) {
+        UserId userId = new UserId(id);
         List<Order> orders = orderRepositoryPort.findByUserId(userId);
         List<Long> allProductIds = orders.stream()
                 .flatMap(order -> order.getItems().stream())

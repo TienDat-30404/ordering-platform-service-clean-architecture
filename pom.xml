@@ -26,8 +26,10 @@
     <modules>
         <module>common-dtos</module>
         <!-- <module>discovey_eureka</module> -->
+        <module>api-gateway</module>
         <module>order-service</module>
         <module>restaurant-service</module> 
+        <module>user-service</module>
     </modules>
 
     <dependencyManagement>

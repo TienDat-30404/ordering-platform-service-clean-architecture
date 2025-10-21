@@ -17,4 +17,6 @@ public interface OrderJpaRepository extends JpaRepository<OrderJpaEntity, Long> 
             "  AVG(o.amount) AS averageOrderValue " +
             "FROM OrderJpaEntity o")
     OrderStatisticsJpaProjection getOrderStatistics();
+
+    OrderJpaEntity findByIdAndUserId(Long orderId, Long userId);
 }

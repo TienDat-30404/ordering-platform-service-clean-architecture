@@ -7,7 +7,7 @@ import lombok.Data;
 @Builder
 public class RateOrderCommand {
     private Long orderId;
-    private Long customerId;
-    private Integer score; // 1-5
+    // private Long customerId;
+    private Integer score;
     private String comment;
 }

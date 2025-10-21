@@ -17,7 +17,7 @@ import com.example.demo.adapters.out.config.FeignClientConfig;
 
 @FeignClient(
     name = "restaurant-service", 
-    url = "http://restaurant-service:8080", 
+    // url = "http://restaurant-service:8081", 
     configuration = FeignClientConfig.class
 )
 public interface RestaurantServiceApi {

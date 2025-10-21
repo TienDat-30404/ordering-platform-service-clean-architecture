@@ -29,7 +29,7 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
     private final RestaurantDataProviderPort restaurantDataProviderPort;
 
     @Transactional
-    public TrackOrderResponse createOrder(CreateOrderCommand command) {
+    public TrackOrderResponse createOrder(CreateOrderCommand command, Long userId) {
 
         // 1. lấy tất cả productIds của đơn hàng cần tạo
         List<Long> productIds = command.getItems().stream()
@@ -73,7 +73,7 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
                 }).collect(Collectors.toList());
         // 4. Tạo Order Aggregate Root
         Order order = new Order(
-                new UserId(command.getUserId()),
+                new UserId(userId),
                 finalOrderItems,
                 new RestaurantId(command.getRestaurantId()));
 
