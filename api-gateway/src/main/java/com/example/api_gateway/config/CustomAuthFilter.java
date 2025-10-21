@@ -39,6 +39,10 @@ public class CustomAuthFilter implements WebFilter, Ordered {
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
+    private final List<String> publicPaths = List.of(
+        "/api/v1/auth/**"
+    );
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
@@ -54,12 +58,10 @@ public class CustomAuthFilter implements WebFilter, Ordered {
             return chain.filter(exchange); // Cho phép OPTIONS request đi qua ngay lập tức
         }
 
-        // System.out.println("checkBoolean" + isPublicPath(path, method));
-        // Bỏ qua authentication cho các endpoint public
-        // if (isPublicPath(path, method)) {
-        //     LOGGER.debug("Skipping authentication for public path: {}", path);
-        //     return chain.filter(exchange);
-        // }
+
+        if (isPublicPath(path)) { 
+            return chain.filter(exchange);
+        }
 
         final String authHeader = request.getHeaders().getFirst("Authorization");
 
@@ -101,53 +103,11 @@ public class CustomAuthFilter implements WebFilter, Ordered {
         }
     }
 
-    // private boolean isPublicPath(String requestPath, HttpMethod requestMethod) {
-    //     // System.out.println("requestPathhhh" + requestPath);
-    //     // System.out.println("requestMethoddđ" + requestMethod);
-
-    //     if (publicPathsRaw == null || publicPathsRaw.isEmpty()) {
-    //         System.out.println("No public paths configured");
-    //         return false;
-    //     }
-    //     return publicPathsRaw.stream()
-    //             .anyMatch(publicPathEntry -> {
-    //                 String trimmedEntry = publicPathEntry.trim();
-                    
-    //                 if (trimmedEntry.isEmpty()) {
-    //                     return false;
-    //                 }
-
-    //                 String[] parts = trimmedEntry.split("\\s+", 2); // Tách bằng whitespace
-    //                 HttpMethod configuredMethod = null;
-    //                 String configuredPathPattern = null;
-
-    //                 if (parts.length == 2) {
-    //                     try {
-    //                         configuredMethod = HttpMethod.valueOf(parts[0].toUpperCase());
-    //                     } catch (IllegalArgumentException e) {
-    //                         LOGGER.warn("Invalid HTTP method in public path configuration: {}", parts[0]);
-    //                         return false;
-    //                     }
-    //                     configuredPathPattern = parts[1];
-    //                 } else if (parts.length == 1 && !parts[0].isEmpty()) {
-    //                     // Nếu chỉ có đường dẫn, mặc định là public cho MỌI phương thức
-    //                     configuredMethod = null;
-    //                     configuredPathPattern = parts[0];
-    //                 } else {
-    //                     return false;
-    //                 }
-                
-    //                 // System.out.println("111111111111111111" + configuredPathPattern);
-    //                 // System.out.println("22222222222222222222" + requestPath);
-    //                 boolean methodMatches = (configuredMethod == null || configuredMethod.equals(requestMethod));
-    //                 boolean pathMatches = pathMatcher.match(configuredPathPattern, requestPath);
-
-    //                 // System.out.println("methodMathcessss" + methodMatches);
-    //                 // System.out.println("pathMatchesss" + pathMatches);
-
-    //                 return methodMatches && pathMatches;
-    //             });
-    // }
+    private boolean isPublicPath(String requestPath) {
+    // Chỉ cần kiểm tra xem đường dẫn có khớp với bất kỳ pattern nào trong publicPaths không
+    return publicPaths.stream()
+        .anyMatch(pattern -> pathMatcher.match(pattern, requestPath));
+    }
 
     @Override
     public int getOrder() {
