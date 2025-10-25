@@ -18,6 +18,9 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
+// ✅ NEW: chỉ để log cho đồng bộ, không ảnh hưởng hành vi
+import com.example.common_dtos.enums.PaymentStatus;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -35,16 +38,17 @@ public class PaymentAuthorizeListener {
 
         JsonNode root = om.readTree(rec.value());
         String orderId = root.path("orderId").asText();
-        // payload.amount có thể là string/number
         String amountStr = root.path("payload").path("amount").asText("0");
         BigDecimal amount = new BigDecimal(amountStr);
 
-        log.info("[PAYMENT] AUTHORIZE orderId={}, amount={}, sagaId={}", orderId, amount, sagaId);
+        log.info("[PAYMENT] AUTHORIZE request orderId={} amount={} sagaId={}", orderId, amount, sagaId);
 
         var result = paymentService.authorize(orderId, amount);
 
         String eventType;
         Map<String, Object> payload;
+        PaymentStatus statusForLog;
+
         if (result.approved()) {
             eventType = "PAYMENT_AUTHORIZED";
             payload = Map.of(
@@ -52,12 +56,14 @@ public class PaymentAuthorizeListener {
                     "transactionId", result.txId(),
                     "approvedAt", Instant.now().toString()
             );
+            statusForLog = PaymentStatus.AUTHORIZED;
         } else {
             eventType = "PAYMENT_FAILED";
             payload = Map.of(
                     "orderId", orderId,
                     "reason", result.reason()
             );
+            statusForLog = PaymentStatus.FAILED;
         }
 
         var envelope = Map.of(
@@ -78,7 +84,7 @@ public class PaymentAuthorizeListener {
                 )
         );
 
-        log.info("[PAYMENT] Sent {} for orderId={} to {}", eventType, orderId, replyTo);
+        log.info("[PAYMENT] Sent {} (status={}) for orderId={} to {}", eventType, statusForLog, orderId, replyTo);
     }
 
     private String header(ConsumerRecord<?,?> rec, String key) {

@@ -1,5 +1,7 @@
-
 spring:
+  application:
+    name: restaurant-service
+
   kafka:
     bootstrap-servers: kafka:9092
     consumer:
@@ -7,6 +9,10 @@ spring:
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
   datasource:
     url: jdbc:postgresql://restaurant-db:5432/restaurant_service_clean_architecture
     username: postgres
@@ -18,20 +24,21 @@ spring:
       ddl-auto: update        # create, create-drop, update, none
     show-sql: true            # log SQL ra console
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-    defer-datasource-initialization : true
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        format_sql: true
 
-  # redis:
-  #   host: localhost
-  #   port: 6379
-
-  sql.init.mode : always  # Luôn chạy file schema.sql và data.sql khi khởi động
-
-
-  # Optional: Log format dễ đọc hơn
-  jpa.properties.hibernate.format_sql: true
+  sql.init.mode: always  # Luôn chạy file schema.sql và data.sql khi khởi động
 
 server:
   port: 8081
+
+logging:
+  level:
+    root: INFO
+    org.springframework.kafka: INFO
+    com.example.demo: DEBUG
 
 management:
   endpoints:
@@ -41,4 +48,3 @@ management:
   endpoint:
     prometheus:
       enabled: true
-

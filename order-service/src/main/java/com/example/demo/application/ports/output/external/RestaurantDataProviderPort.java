@@ -6,7 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 public interface RestaurantDataProviderPort {
-    
+
+    List<ProductDetailData> getProducts(Long restaurantId, List<Long> productIds);
     List<ItemValidationResponse> validateOrderCreation(Long restaurantId, List<Long> productIds);
     Map<Long, ProductDetailData> getProductDetailsByIds(List<Long> productIds);
 }

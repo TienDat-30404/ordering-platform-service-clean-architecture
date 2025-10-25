@@ -2,6 +2,9 @@ package com.example.demo.restaurants_messaging.listener;
 
 import com.example.common_dtos.dto.ItemValidationRequest;
 import com.example.common_dtos.dto.ItemValidationResponse;
+import com.example.common_dtos.enums.RestaurantOrderStatus;
+import com.example.common_dtos.enums.SagaStatus;
+import com.example.common_dtos.enums.Topics;
 import com.example.demo.application.ports.input.ValidateMenuItemUseCase;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,7 +27,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ValidateMenuItemsListener {
 
-    private static final String DEFAULT_REPLY_TOPIC = "order.saga.reply";
+    private static final String DEFAULT_REPLY_TOPIC = Topics.ORDER_SAGA_REPLY;
 
     private final KafkaTemplate<String, String> template;
     private final ValidateMenuItemUseCase validateMenuItemUseCase;
@@ -37,7 +40,7 @@ public class ValidateMenuItemsListener {
      * C) {"payload":{"productIds":[1,2,3]}}
      * - restaurantId có thể ở: root.restaurantId (String), payload.restaurantId (String/Number), hoặc header "restaurantId"
      */
-    @KafkaListener(topics = "restaurant.validate.command", groupId = "restaurant-service-group")
+    @KafkaListener(topics = Topics.RESTAURANT_VALIDATE_COMMAND, groupId = "restaurant-service-group")
     public void onValidate(ConsumerRecord<String, String> rec) throws Exception {
         final String eventTypeHdr = header(rec, "eventType");
         final String sagaId = header(rec, "sagaId");
@@ -116,6 +119,8 @@ public class ValidateMenuItemsListener {
         }
 
         if (!errors.isEmpty()) {
+            log.info("[RESTAURANT] validation failed → SagaStatus={}, RestaurantStatus={}",
+                    SagaStatus.RESTAURANT_VALIDATION_FAIL, RestaurantOrderStatus.VALIDATED_FAIL);
             replyInvalid(replyTo, orderId, sagaId, errors);
             return;
         }
@@ -132,7 +137,9 @@ public class ValidateMenuItemsListener {
         );
 
         String outJson = om.writeValueAsString(outPayload);
-        log.info("[RESTAURANT->SAGA] VALID key={} sagaId={} toTopic={} payload={}", orderId, sagaId, replyTo, outJson);
+        log.info("[RESTAURANT->SAGA] VALID key={} sagaId={} toTopic={} sagaStatus={} restaurantStatus={} payload={}",
+                orderId, sagaId, replyTo, SagaStatus.RESTAURANT_VALIDATION_OK, RestaurantOrderStatus.VALIDATED_OK, outJson);
+
         send(replyTo, orderId, sagaId, "RESTAURANT_ITEMS_VALIDATED", outJson);
     }
 
@@ -217,7 +224,8 @@ public class ValidateMenuItemsListener {
                 "timestamp", Instant.now().toString()
         );
         String outJson = om.writeValueAsString(outPayload);
-        log.info("[RESTAURANT->SAGA] INVALID key={} sagaId={} toTopic={} payload={}", orderId, sagaId, replyTo, outJson);
+        log.info("[RESTAURANT->SAGA] INVALID key={} sagaId={} sagaStatus={} restaurantStatus={} payload={}",
+                orderId, sagaId, SagaStatus.RESTAURANT_VALIDATION_FAIL, RestaurantOrderStatus.VALIDATED_FAIL, outJson);
         send(replyTo, orderId, sagaId, "RESTAURANT_ITEMS_INVALID", outJson);
     }
 

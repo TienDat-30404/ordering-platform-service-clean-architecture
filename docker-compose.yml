@@ -84,10 +84,24 @@ services:
       kafka:
         condition: service_started
     environment:
+      # --- Kafka (internal listener inside docker network)
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      # Producer: idempotent + retries (fix error)
+      SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+      SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+      SPRING_KAFKA_PRODUCER_ACKS: all
+      SPRING_KAFKA_PRODUCER_RETRIES: 5
+      SPRING_KAFKA_PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE: "true"
+      SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION: 5
+      SPRING_KAFKA_PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS: 120000
+      # Consumer (tùy chọn): group id riêng
+      SPRING_KAFKA_CONSUMER_GROUP_ID: order-service-group
+      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+      # --- Datasource
       SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/order_service_clean_architecture
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: password
+      # --- Server
       SERVER_PORT: 8080
     volumes:
       - ./order-service/target/classes:/app/classes
@@ -109,10 +123,24 @@ services:
       kafka:
         condition: service_started
     environment:
+      # --- Kafka
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      # Producer: idempotent + retries (vì có publish reply)
+      SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+      SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+      SPRING_KAFKA_PRODUCER_ACKS: all
+      SPRING_KAFKA_PRODUCER_RETRIES: 5
+      SPRING_KAFKA_PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE: "true"
+      SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION: 5
+      SPRING_KAFKA_PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS: 120000
+      # Consumer group id (khớp code listener)
+      SPRING_KAFKA_CONSUMER_GROUP_ID: restaurant-service-group
+      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+      # --- Datasource
       SPRING_DATASOURCE_URL: jdbc:postgresql://restaurant-db:5432/restaurant_service_clean_architecture
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: password
+      # --- Server
       SERVER_PORT: 8080
     volumes:
       - ./restaurant-service/target/classes:/app/classes
@@ -134,10 +162,24 @@ services:
       kafka:
         condition: service_started
     environment:
+      # --- Kafka
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      # Producer (publish reply)
+      SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+      SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+      SPRING_KAFKA_PRODUCER_ACKS: all
+      SPRING_KAFKA_PRODUCER_RETRIES: 5
+      SPRING_KAFKA_PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE: "true"
+      SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION: 5
+      SPRING_KAFKA_PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS: 120000
+      # Consumer (nếu có listener khác)
+      SPRING_KAFKA_CONSUMER_GROUP_ID: payment-service-group
+      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+      # --- Datasource
       SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment_service_clean_architecture
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: password
+      # --- Server
       SERVER_PORT: 8080
     volumes:
       - ./payment-service/target/classes:/app/classes

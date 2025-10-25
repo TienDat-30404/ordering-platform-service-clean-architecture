@@ -65,7 +65,7 @@ public class OrderMapperImpl implements OrderMapper {
         response.setUserId(order.getUserId().value());
         response.setRestaurantId(order.getRestaurantId().value());
         response.setAmount(order.getAmount());
-        response.setStatus(order.getStatus().getName());
+        response.setStatus(order.getStatus().name());
         response.setCreatedAt(LocalDateTime.ofInstant(order.getCreatedAt(), ZoneId.systemDefault()));
         List<OrderItemResponse> items = order.getItems().stream()
                 .map(this::toOrderItemResponse)
