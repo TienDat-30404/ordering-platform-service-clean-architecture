@@ -12,6 +12,7 @@ import com.example.demo.application.ports.output.repository.OrderRepositoryPort;
 import com.example.demo.domain.entity.Order;
 import com.example.demo.domain.valueobject.order.OrderId;
 import com.example.demo.domain.valueobject.product.ProductId;
+import com.example.demo.domain.valueobject.user.UserId;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,8 +22,17 @@ public class RemoveItemsUseCaseImpl implements RemoveItemsUseCase {
     private final OrderRepositoryPort orderRepositoryPort;
     private final OrderMapper orderMapper;
 
-    public TrackOrderResponse removeItems(RemoveItemsCommand command) {
-        Order order = orderRepositoryPort.findById(new OrderId(command.getOrderId()));
+    public TrackOrderResponse removeItems(RemoveItemsCommand command, UserId userId, OrderId orderId) {
+
+        Order existingOrder = orderRepositoryPort.findByIdAndUserId(
+            orderId,
+            userId
+        );
+        if(existingOrder == null) {
+            throw new Order.OrderDomainException("User does not have permission to modify this order.");
+        }
+
+        Order order = orderRepositoryPort.findById(orderId);
 
         List<ProductId> productIds = command.getProductIdsToRemove().stream()
                 .map(ProductId::new)

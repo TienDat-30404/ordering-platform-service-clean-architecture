@@ -1,4 +1,7 @@
 spring:
+
+  application:
+    name: order-service
   order:
     saga:
       reply:
@@ -8,9 +11,11 @@ spring:
 
   kafka:
     bootstrap-servers: kafka:9092   # tên service trong docker-compose
+    # bootstrap-servers: localhost:9092   # tên service trong docker-compose
+
     producer:
       acks: all
-      retries: 0                       # app đã tự retry
+      retries: 3                       # app đã tự retry
       delivery-timeout-ms: 120000
       request-timeout-ms: 30000
       properties:
@@ -23,10 +28,15 @@ spring:
       group-id: order-service-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      # value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
 
   datasource:
+    # url: jdbc:postgresql://localhost:5432/order_saervice_clean_architecture
     url: jdbc:postgresql://order-db:5432/order_service_clean_architecture
+
     username: postgres
     password:
     driver-class-name: org.postgresql.Driver
@@ -45,6 +55,16 @@ server:
 restaurant-service:
   # GIẢ ĐỊNH: Dịch vụ Nhà hàng đang chạy trên localhost:8081
   url: http://localhost:8081
+
+eureka:
+  client:
+    service-url:
+      # defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://discovery-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
 
 logging:
   level:

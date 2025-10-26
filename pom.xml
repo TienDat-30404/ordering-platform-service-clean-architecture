@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.4</version>
+        <version>3.5.6</version> 
         <relativePath/> <!-- lấy trực tiếp từ repository -->
     </parent>
 
@@ -23,6 +23,7 @@
 
     <properties>
         <java.version>21</java.version>
+        <spring-boot.version>3.5.6</spring-boot.version>
         <spring-cloud.version>2024.0.0</spring-cloud.version>
         <lombok.version>1.18.34</lombok.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -30,7 +31,11 @@
 
     <modules>
         <module>common-dtos</module>
+        <!-- <module>discovey_eureka</module> -->
+        <module>api-gateway</module>
         <module>order-service</module>
+        <!-- <module>restaurant-service</module>  -->
+        <module>user-service</module>
         <module>restaurant-service</module>
         <module>payment-service</module>
     </modules>

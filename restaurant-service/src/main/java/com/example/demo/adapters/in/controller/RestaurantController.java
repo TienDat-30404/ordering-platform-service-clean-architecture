@@ -2,10 +2,7 @@ package com.example.demo.adapters.in.controller;
 
 import java.util.List;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.jaxb.PageAdapter;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,21 +33,22 @@ public class RestaurantController {
 
     @PostMapping("/validate-menu-items")
     public ResponseEntity<List<ItemValidationResponse>> validateMenuItems(
-            @RequestBody ItemValidationRequest request) {
 
+            @RequestBody ItemValidationRequest request) {
         List<ItemValidationResponse> response = validationService.validateItems(request);
 
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/menuItems")
+
     public ResponseEntity<List<MenuItemResponse>> getMenuItems(
             @RequestParam("ids") List<Long> ids) {
         List<MenuItemResponse> response = getMenuItemsUseCase.getAllMenuItemsByIds(ids);
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/test")
+    @GetMapping("/test1111")
     public String test() {
         return "Restaurant Service is up and running!";
     }
@@ -68,13 +66,13 @@ public class RestaurantController {
         private String name;
     }
 
-
     @GetMapping("/get-all-restaurants") // Tên RESTful chuẩn (danh từ số nhiều)
+    // @Cacheable(value = "allRestaurants", key = "'all'")
     public List<RestaurantDTO> getAllRestaurants() {
-      List<RestaurantDTO> dtos = restaurantJpaRepository.findAll()
-              .stream()
-              .map(this::convertToDto)
-              .toList();
+        List<RestaurantDTO> dtos = restaurantJpaRepository.findAll()
+                .stream()
+                .map(this::convertToDto)
+                .toList();
         return dtos;
     }
 

@@ -1,5 +1,6 @@
 package com.example.demo.adapters.in.controller;
 
+import java.net.Authenticator;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demo.adapters.out.config.AuthenticatedUser;
 import com.example.demo.application.dto.command.AddItemsCommand;
 import com.example.demo.application.dto.command.ApplyVoucherCommand;
 import com.example.demo.application.dto.command.CreateOrderCommand;
@@ -32,6 +34,9 @@ import com.example.demo.application.ports.input.GetOrderHistoryUseCase;
 import com.example.demo.application.ports.input.OrderStatisticsUseCase;
 import com.example.demo.application.ports.input.RateOrderUseCase;
 import com.example.demo.application.ports.input.RemoveItemsUseCase;
+import com.example.demo.domain.valueobject.order.OrderId;
+import com.example.demo.domain.valueobject.user.UserId;
+
 import com.example.demo.application.orchestrator.OrderOrchestratorService;
 import lombok.RequiredArgsConstructor;
 
@@ -49,7 +54,10 @@ public class OrderController {
     private final OrderStatisticsUseCase orderStatisticsUseCase;
     private final ApplyVoucherUseCase applyVoucherUseCase;
     private final RateOrderUseCase rateOrderUseCase;
+    private final AuthenticatedUser authenticatedUser;
+
     private final OrderOrchestratorService orchestratorService;
+
     // danh sách đơn hàng
     @GetMapping
     public ResponseEntity<List<TrackOrderResponse>> getAllOrders() {
@@ -60,13 +68,13 @@ public class OrderController {
     // tạo đơn hàng
     @PostMapping
     public ResponseEntity<TrackOrderResponse> createOrder(@RequestBody CreateOrderCommand command) {
-        TrackOrderResponse res = createOrderUseCase.createOrder(command); // lưu PENDING
+        Long userId = authenticatedUser.getUserId();
+        TrackOrderResponse res = createOrderUseCase.createOrder(command, userId); // lưu PENDING
 
-        orchestratorService.startCreateOrderSagaFromCommand(
-                res.getId().toString(),
-                res.getRestaurantId(),
-                command.getItems()
-        );
+        // orchestratorService.startCreateOrderSagaFromCommand(
+        //         res.getId().toString(),
+        //         res.getRestaurantId(),
+        //         command.getItems());
 
         return ResponseEntity.ok(res);
     }
@@ -76,8 +84,10 @@ public class OrderController {
     public ResponseEntity<TrackOrderResponse> addItemsToOrder(
             @PathVariable("orderId") Long orderId,
             @RequestBody AddItemsCommand command) {
+
+        Long userId = authenticatedUser.getUserId();
         command.setOrderId(orderId);
-        TrackOrderResponse response = addItemsToOrderUseCase.addItems(command);
+        TrackOrderResponse response = addItemsToOrderUseCase.addItems(command, userId);
         return ResponseEntity.ok(response);
     }
 
@@ -86,20 +96,16 @@ public class OrderController {
     public ResponseEntity<TrackOrderResponse> removeItemsFromOrder(
             @PathVariable("orderId") Long orderId,
             @RequestBody RemoveItemsCommand command) {
-        command.setOrderId(orderId);
-        TrackOrderResponse response = removeItemsUseCase.removeItems(command);
+        Long userId = authenticatedUser.getUserId();
+        TrackOrderResponse response = removeItemsUseCase.removeItems(command, new UserId(userId), new OrderId(orderId));
         return ResponseEntity.ok(response);
     }
 
     // lấy tất cả đơn hàng của 1 user dựa vào userID
-    @GetMapping(params = "userId")
-    public ResponseEntity<List<TrackOrderResponse>> getOrdersByUser(
-            @RequestParam("userId") Long userId) {
-
-        GetOrdersByCustomerQuery query = GetOrdersByCustomerQuery.builder()
-                .userId(userId) // Đặt giá trị Long vào trường customerId của DTO
-                .build();
-        List<TrackOrderResponse> response = getOrderHistoryUseCase.getOrdersByCustomer(query);
+    @GetMapping("/history-orders")
+    public ResponseEntity<List<TrackOrderResponse>> getOrdersByUser() {
+        Long userId = authenticatedUser.getUserId();
+        List<TrackOrderResponse> response = getOrderHistoryUseCase.getOrdersByCustomer(userId);
         return ResponseEntity.ok(response);
     }
 
@@ -134,23 +140,20 @@ public class OrderController {
     }
 
     // đánh giá đơn hàng
-    @PostMapping("/{orderId}/rating")
+    @PostMapping("/rating")
     public ResponseEntity<Void> rateOrder(
-            @PathVariable Long orderId,
-            // @RequestHeader("X-Customer-Id") Long customerId,
             @RequestBody RateOrderCommand request) {
-
+        Long userId = authenticatedUser.getUserId();
         RateOrderCommand command = RateOrderCommand.builder()
-                .orderId(orderId)
-                .customerId(request.getCustomerId())
+                .orderId(request.getOrderId())
                 .score(request.getScore())
                 .comment(request.getComment())
                 .build();
 
-        rateOrderUseCase.rateOrder(command);
+        rateOrderUseCase.rateOrder(command, new UserId(userId));
 
         return ResponseEntity.status(HttpStatus.CREATED).build(); // 201 Created
-    }
+    }   
 
     @GetMapping("/test")
     public String test() {

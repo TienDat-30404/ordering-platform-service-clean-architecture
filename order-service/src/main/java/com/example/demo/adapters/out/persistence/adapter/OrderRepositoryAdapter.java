@@ -91,10 +91,17 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
 
         // Ánh xạ từ Persistence Projection sang Domain VO
         return new OrderStatistics(
-            projection.getTotalOrders(),
-            projection.getTotalRevenue(),
-            projection.getAverageOrderValue()
-        );
+                projection.getTotalOrders(),
+                projection.getTotalRevenue(),
+                projection.getAverageOrderValue());
+    }
+
+    public Order findByIdAndUserId(OrderId orderId, UserId userId) {
+        OrderJpaEntity jpaEntity = orderJpaRepository.findByIdAndUserId(orderId.value(), userId.value());
+        if (jpaEntity == null) {
+            return null;
+        }
+        return orderPersistenceMapper.toDomainEntity(jpaEntity);
     }
 
 }

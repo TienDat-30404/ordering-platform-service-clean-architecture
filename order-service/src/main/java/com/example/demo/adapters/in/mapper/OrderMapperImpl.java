@@ -1,5 +1,6 @@
 package com.example.demo.adapters.in.mapper;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -39,13 +40,18 @@ public class OrderMapperImpl implements OrderMapper {
     // }
 
     // DTO (Create Order Item ) -> domain entity ( Order Item )
-    // private OrderItem toOrderItemEntity(CreateOrderItemCommand itemCommand) {
-    // ProductId productId = new ProductId(itemCommand.getProductId());
+    @Override
+    public List<OrderItem> toOrderItems(List<CreateOrderItemCommand> orderItems) {
+        return orderItems.stream()
+                .map(this::toOrderItem) // Dùng phương thức helper bên dưới
+                .collect(Collectors.toList());
+    }
 
-    // OrderItem item = OrderItem.createNew(productId, itemCommand.getQuantity(),
-    // itemCommand.getPrice());
-    // return item;
-    // }
+    private OrderItem toOrderItem(CreateOrderItemCommand itemCommand) {
+        ProductId productId = new ProductId(itemCommand.getProductId());
+        OrderItem item = OrderItem.createNew(productId, itemCommand.getQuantity(), BigDecimal.ZERO);
+        return item;
+    }
 
     // DTO (Order Item) -> DTO (OrderItemResponse) - phương thức bổ sung (ko phải
     // lớp triển khai)
@@ -84,12 +90,6 @@ public class OrderMapperImpl implements OrderMapper {
                 .collect(Collectors.toList());
     }
 
-    // public List<OrderItem> toListOrderItemEntity(AddItemsCommand command) {
-    // return command.getNewItems().stream()
-    // .map(this::toOrderItemEntity)
-    // .collect(Collectors.toList());
-    // }
-
     public TrackOrderResponse toProductDataOfOrderDTO(Order order, Map<Long, ProductDetailData> productDetailsMap) {
         TrackOrderResponse response = new TrackOrderResponse();
         // ... set các trường Order ...
@@ -108,10 +108,21 @@ public class OrderMapperImpl implements OrderMapper {
 
         return new OrderItemResponse(
                 item.getProductId().value(),
-                detail != null ? detail.getName() : "Unknown Product", 
+                detail != null ? detail.getName() : "Unknown Product",
                 item.getQuantity(),
                 item.getPrice(),
                 item.getTotalPrice());
     }
+
+    public List<Map<String, Object>> toItemsPayload(List<OrderItem> orderItems) {
+    return orderItems.stream()
+        .map(item -> {
+            Map<String, Object> itemMap = new java.util.HashMap<>();
+            itemMap.put("productId", item.getProductId().value());
+            itemMap.put("quantity", item.getQuantity());
+            return itemMap;
+        })
+        .collect(Collectors.toList());
+}
 
 }

@@ -1,43 +1,77 @@
-// package com.example.demo.adapters.out.config;
 
-// import org.springframework.context.annotation.Bean;
-// import org.springframework.context.annotation.Configuration;
-// import org.springframework.data.redis.cache.RedisCacheConfiguration;
-// import org.springframework.data.redis.cache.RedisCacheManager;
-// import org.springframework.data.redis.connection.RedisConnectionFactory;
-// import org.springframework.data.redis.core.RedisTemplate;
-// import org.springframework.data.redis.serializer.*;
+package com.example.demo.adapters.out.config;
 
-// @Configuration
-// public class RedisConfig {
+import com.example.demo.adapters.out.cache.MenuItemCaching;
+import com.example.demo.domain.entity.MenuItem;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-//     @Bean
-//     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-//         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-//                 .serializeKeysWith(
-//                         RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-//                 .serializeValuesWith(RedisSerializationContext.SerializationPair
-//                         .fromSerializer(new GenericJackson2JsonRedisSerializer()))
-//                 .disableCachingNullValues();
+import java.time.Duration;
 
-//         return RedisCacheManager.builder(connectionFactory)
-//                 .cacheDefaults(config)
-//                 .build();
-//     }
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.*;
 
-//     @Bean
-//     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-//         RedisTemplate<String, Object> template = new RedisTemplate<>();
-//         template.setConnectionFactory(connectionFactory);
+@Configuration
+public class RedisConfig {
 
-//         // Key serializer: String
-//         template.setKeySerializer(new StringRedisSerializer());
-//         template.setHashKeySerializer(new StringRedisSerializer());
+    private RedisSerializer<Object> createJsonSerializer() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.addMixIn(MenuItem.class, MenuItemCaching.class);
+        objectMapper.activateDefaultTyping(
+            LaissezFaireSubTypeValidator.instance, 
+            ObjectMapper.DefaultTyping.NON_FINAL, 
+            JsonTypeInfo.As.PROPERTY
+        );
+        
+        Jackson2JsonRedisSerializer<Object> serializer = 
+            new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);
 
-//         // Value serializer: Jackson (hỗ trợ complex objects)
-//         template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
-//         template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+        return serializer;
+    }
 
-//         return template;
-//     }
-// }
+    @Bean
+    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+        
+        RedisSerializer<Object> jsonSerializer = createJsonSerializer();
+
+        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(15))
+                .serializeKeysWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair
+                        .fromSerializer(jsonSerializer)) // Sử dụng serializer mới
+                .disableCachingNullValues();
+
+        return RedisCacheManager.builder(connectionFactory)
+                .cacheDefaults(config).build();
+    }
+    
+    @Bean
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+        
+        RedisSerializer<Object> jsonSerializer = createJsonSerializer();
+        
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+
+        // Key serializer: String
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+
+        // Value serializer: Jackson (hỗ trợ complex objects + Java Time + MixIn)
+        template.setValueSerializer(jsonSerializer); 
+        template.setHashValueSerializer(jsonSerializer); 
+
+        template.afterPropertiesSet();
+        return template;
+    }
+}

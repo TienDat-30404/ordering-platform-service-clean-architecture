@@ -66,7 +66,10 @@ public class RestaurantPersistenceMapper {
             status, 
             jpaEntity.getRating(), 
             jpaEntity.getTotalRatings(), 
-            items);
+            items,
+            jpaEntity.getCreatedAt(),
+            jpaEntity.getUpdatedAt()
+            );
      }
 
     public MenuItem toDomainMenuItem(MenuItemJpaEntity entity) {

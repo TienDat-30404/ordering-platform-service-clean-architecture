@@ -24,28 +24,26 @@ public class RateOrderUseCaseImpl implements RateOrderUseCase {
 
     @Override
     @Transactional
-    public void rateOrder(RateOrderCommand command) {
+    public void rateOrder(RateOrderCommand command, UserId userId) {
         // 1. Tải Order
         OrderId orderId = new OrderId(command.getOrderId());
         Order order = orderRepositoryPort.findById(orderId);
-        
+
         // 2. Áp dụng Logic Nghiệp vụ (Domain Logic)
         order.validateForRating(); // Kiểm tra trạng thái APPROVED và chưa rated
 
         // 3. Tạo OrderRating Domain Entity
         RatingScore score = new RatingScore(command.getScore());
-        UserId customerId = new UserId(command.getCustomerId());
-        
-        OrderRating rating = new OrderRating(
-            orderId, 
-            customerId, 
-            score, 
-            command.getComment()
-        );
 
+        OrderRating rating = new OrderRating(
+                orderId,
+                userId,
+                score,
+                command.getComment());
+        
         // 4. Lưu OrderRating và cập nhật trạng thái Order
         ratingRepositoryPort.save(rating);
-        
+
         order.setHasBeenRated(true); // Đánh dấu đã rated
         orderRepositoryPort.save(order);
     }

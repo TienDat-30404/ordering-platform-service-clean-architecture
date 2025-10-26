@@ -12,10 +12,10 @@ scrape_configs:
     static_configs:
       - targets: ['restaurant-service:8080']
 
-  - job_name: 'payment-service'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['payment-service:8080']
+  # - job_name: 'payment-service'
+  #   metrics_path: '/actuator/prometheus'
+  #   static_configs:
+  #     - targets: ['payment-service:8080']
 
 rule_files:
   - "alerts.yml"

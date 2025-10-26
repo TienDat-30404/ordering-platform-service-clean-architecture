@@ -18,6 +18,7 @@ import com.example.demo.domain.entity.Order;
 import com.example.demo.domain.entity.OrderItem;
 import com.example.demo.domain.valueobject.order.OrderId;
 import com.example.demo.domain.valueobject.product.ProductId;
+import com.example.demo.domain.valueobject.user.UserId;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,8 +30,17 @@ public class AddItemsToOrderUseCaseImpl implements AddItemsUseCase {
     private final RestaurantDataProviderPort restaurantDataProviderPort; // <-- Inject Port
 
     @Transactional
-    public TrackOrderResponse addItems(AddItemsCommand command) {
+    public TrackOrderResponse addItems(AddItemsCommand command, Long userId) {
         
+        // 0. Kiểm tra user có quyền với Order này không
+        Order existingOrder = orderRepositoryPort.findByIdAndUserId(
+            new OrderId(command.getOrderId()), 
+            new UserId(userId)
+        );
+        if(existingOrder == null) {
+            throw new Order.OrderDomainException("User does not have permission to modify this order.");
+        }
+
         // 1. Tải Order Aggregate Root
         Order order = orderRepositoryPort.findById(new OrderId(command.getOrderId()));
         

@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import com.example.demo.domain.valueobject.MenuItemId;
 import com.example.demo.domain.valueobject.RestaurantId;
 
+
 public class MenuItem {
     private MenuItemId id;
     private RestaurantId restaurantId;
@@ -13,13 +14,13 @@ public class MenuItem {
     private String description;
     private BigDecimal price;
     private String category;
-    private Boolean available;
+    private boolean available;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     public MenuItem() {}
 
     public MenuItem(MenuItemId id, RestaurantId restaurantId, String name, String description, BigDecimal price, String category, Boolean available, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        this.id = id;
+         this.id = id;
         this.restaurantId = restaurantId;
         this.name = name;
         this.description = description;

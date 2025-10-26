@@ -17,9 +17,9 @@ public class OrderItem {
         if (quantity <= 0) {
             throw new IllegalArgumentException("Quantity must be greater than zero");
         }
-        if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Price must be greater than zero");
-        }
+        // if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
+        // throw new IllegalArgumentException("Price must be greater than zero");
+        // }
         this.id = id;
         this.productId = productId;
         this.quantity = quantity;
@@ -27,7 +27,7 @@ public class OrderItem {
     }
 
     public static OrderItem createNew(ProductId productId, int quantity, BigDecimal price) {
-        return new OrderItem(null, productId, quantity, price); 
+        return new OrderItem(null, productId, quantity, price);
     }
 
     public void setOrder(Order order) {
@@ -38,11 +38,9 @@ public class OrderItem {
         return productId;
     }
 
-
     public OrderItemId getId() {
         return id;
     }
-
 
     public int getQuantity() {
         return quantity;
@@ -63,7 +61,6 @@ public class OrderItem {
         }
         this.quantity = newQuantity;
     }
-
 
     public void updatePrice(BigDecimal newPrice) {
         if (newPrice == null || newPrice.compareTo(BigDecimal.ZERO) <= 0) {

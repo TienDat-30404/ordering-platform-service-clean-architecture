@@ -25,7 +25,6 @@ public class ApplyVoucherUseCaseImpl implements ApplyVoucherUseCase {
     public void applyVoucher(ApplyVoucherCommand command) {
         // 1. Tải Order
         OrderId orderId = new OrderId(command.getOrderId());
-        System.out.println("orderIDdddd22dddddddddddd" + orderId);
         Order order = orderRepositoryPort.findById(orderId);
             // .orElseThrow(() -> new OrderDomainException("Order not found with ID: " + orderId.value()));
             

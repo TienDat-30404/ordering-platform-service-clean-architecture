@@ -1,3 +1,4 @@
+
 spring:
   application:
     name: restaurant-service
@@ -12,33 +13,53 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    # Nếu chạy local, bạn có thể đổi:
+    # bootstrap-servers: localhost:9092
 
   datasource:
     url: jdbc:postgresql://restaurant-db:5432/restaurant_service_clean_architecture
+    # url: jdbc:postgresql://localhost:5432/restaurant_service_clean_architecture
     username: postgres
     password:
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: update        # create, create-drop, update, none
-    show-sql: true            # log SQL ra console
+      ddl-auto: update          # create, create-drop, update, none
+    show-sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     defer-datasource-initialization: true
     properties:
       hibernate:
         format_sql: true
 
-  sql.init.mode: always  # Luôn chạy file schema.sql và data.sql khi khởi động
+  redis:
+    host: redis
+    port: 6379
 
-server:
-  port: 8081
+  sql:
+    init:
+      mode: always              # luôn chạy schema.sql, data.sql (nếu có)
 
 logging:
   level:
     root: INFO
     org.springframework.kafka: INFO
-    com.example.demo: DEBUG
+    com.example.demo: INFO      # cần debug sâu có thể chuyển DEBUG
+
+eureka:
+  client:
+    service-url:
+      # defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://discovery-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${server.port}}
+
+server:
+  port: 8081
 
 management:
   endpoints:
@@ -48,3 +69,4 @@ management:
   endpoint:
     prometheus:
       enabled: true
+

@@ -35,6 +35,7 @@ public class Order {
         validateItemsExist();
         validateUserIdExists();
         calculateTotalPrice();
+        this.finalPrice = this.amount; // Khởi tạo finalPrice bằng amount ban đầu
     }
 
     public Order(OrderId id, UserId userId, BigDecimal amount, OrderStatus status, Instant createdAt,
@@ -98,6 +99,14 @@ public class Order {
 
         this.voucher = newVoucher;
         calculateFinalPrice(); // Tính toán lại giá cuối cùng
+    }
+
+    public void confirmPaid() {
+        this.status = OrderStatus.PAID;
+    }
+
+     public void canceled() {
+        this.status = OrderStatus.CANCELED;
     }
 
     private void calculateFinalPrice() {
@@ -210,7 +219,6 @@ public class Order {
         }
         // 2. Kiểm tra việc đánh giá lặp lại: Chỉ cho phép rating 1 lần
         if (this.hasBeenRated) {
-            System.out.println("lỗiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii");
             throw new OrderDomainException("This order has already been rated.");
         }
     }

@@ -1,0 +1,53 @@
+
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: jdbc:postgresql://user-db:5432/restaurant_service_clean_architecture
+    # url: jdbc:postgresql://localhost:5432/user_service_clean_architecture
+
+    username: postgres
+    password:
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update        # create, create-drop, update, none
+    show-sql: true            # log SQL ra console
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    defer-datasource-initialization : true
+
+  sql.init.mode : always  # Luôn chạy file schema.sql và data.sql khi khởi động
+
+
+  jpa.properties.hibernate.format_sql: true
+logging:
+  level:
+    root: INFO
+    com.example.demo: INFO
+
+
+eureka:
+  client:
+    service-url:
+      # defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://discovery-server:8761/eureka/
+
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${server.port}}
+
+jwt:
+  secret: eF4$Kf!3v9XzQrL8mT592hJxw@0N1GzD
+  accessToken:
+    expiration: 3600000       # 1 giờ (ms)
+  refreshToken:
+    expiration: 604800000     # 7 ngày (ms)
+    
+server:
+  port: 8082
+
+
+
