@@ -43,7 +43,8 @@ public class PaymentSaga {
     public void handleAuthorizePaymentCommand(@Payload AuthorizePaymentCommandData event,
             @Headers Map<String, Object> headers) {
         log.info("[LISTENER] Received AuthorizePayment command for order: {}", event.getOrderId());
-
+        // String sagaId = (String) headers.get("sagaId");
+        System.out.println("sagaaaIdddddddd" + headers);
         PaymentResponseData response = null;
 
         try {
@@ -72,7 +73,7 @@ public class PaymentSaga {
                     null, event.getOrderId(), event.getUserId(), "FAILED", event.getAmount(), null,
                     "Critical system failure during command handling: " + e.getMessage());
 
-            return;
+            // return;
         } finally {
             System.out.println("publicResponseeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
             System.out.println("responseeeeeeeeeeeeeeeeeeee" + response);

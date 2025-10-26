@@ -234,7 +234,7 @@ public class OrderOrchestratorService {
 
         String json = toJson(env);
 
-        // 🛑 2. Gán Headers (Yêu cầu String)
+        // 🛑 2. Gán Headers (Yêu cầu String)s
         Map<String, String> headers = new LinkedHashMap<>();
         headers.put("sagaId", sagaId);
         headers.put("correlationId", corrId);
@@ -285,19 +285,6 @@ public class OrderOrchestratorService {
             return;
         }
 
-        // log.info("--------------------------------------------------------------------------------");
-        // log.info("[TEST-RECEIVE] ĐÃ NHẬN PHẢN HỒI PAYMENT TỪ KAFKA!");
-        // log.info("[TEST-RECEIVE] Order ID: {}", response.orderId());
-        // log.info("[TEST-RECEIVE] Status: {}", response.status());
-        // log.info("[TEST-RECEIVE] Amount: {}", response.amount());
-        // log.info("[TEST-RECEIVE] Reason: {}", response.reason());
-        // log.info("[TEST-RECEIVE] Dữ liệu PaymentResponseData nhận được: {}",
-        // response.toString());
-        // log.info("--------------------------------------------------------------------------------");
-
-        // Sau khi log, chúng ta sẽ return ngay lập tức để bỏ qua logic nghiệp vụ
-        // (switch/case)
-        // và tránh lỗi do thiếu các hàm confirmOrderPaid/cancelOrder.
         return;
     }
 }
