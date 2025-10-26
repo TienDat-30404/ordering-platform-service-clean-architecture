@@ -106,7 +106,7 @@ public class Order {
     }
 
      public void canceled() {
-        this.status = OrderStatus.CANCELED;
+        this.status = OrderStatus.CANCELLED;
     }
 
     private void calculateFinalPrice() {

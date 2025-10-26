@@ -78,24 +78,18 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
                 finalOrderItems,
                 new RestaurantId(command.getRestaurantId()));
 
-        
+
         // 5. Lưu Order Aggregate
         Order savedOrder = orderRepositoryPort.save(order);
-        
-        List<Map<String, Object>> itemsPayload = orderMapper.toItemsPayload(savedOrder.getItems());
-        // orderOrchestratorService.startCreateOrderSaga(
-        //     savedOrder.getId().toString(),
-        //     savedOrder.getRestaurantId().toString(),
-        //     itemsPayload
-        // );
-        // BigDecimal totalAmountToPay = savedOrder.getFinalPrice();
-        BigDecimal totalAmountToPay = new BigDecimal("1000000.00");
 
-          orderOrchestratorService.startCreateOrderSaga(
-            savedOrder.getId().value(),
-            totalAmountToPay,
-            savedOrder.getUserId().value()
-        );
+        List<Map<String, Object>> itemsPayload = orderMapper.toItemsPayload(savedOrder.getItems());
+         orderOrchestratorService.startCreateOrderSaga(
+             savedOrder.getId().value().toString(),
+             savedOrder.getRestaurantId().value().toString(),
+             itemsPayload
+         );
+         //BigDecimal totalAmountToPay = savedOrder.getFinalPrice();
+        //BigDecimal totalAmountToPay = new BigDecimal("1000000.00");
 
         // 6. Trả về Response
         TrackOrderResponse response = orderMapper.toOrderDTO(savedOrder);
@@ -123,13 +117,13 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
 
 //         Order savedOrder = orderRepositoryPort.save(initialOrder);
 //         List<Map<String, Object>> itemsPayload = orderMapper.toItemsPayload(savedOrder.getItems());
-     
+
 //         orderOrchestratorService.startCreateOrderSaga(
 //             savedOrder.getId().toString(),
 //             savedOrder.getRestaurantId().toString(),
 //             itemsPayload
 //         );
-        
+
 //         // 4. Trả về Response
 //         TrackOrderResponse response = orderMapper.toOrderDTO(savedOrder);
 //         return response;

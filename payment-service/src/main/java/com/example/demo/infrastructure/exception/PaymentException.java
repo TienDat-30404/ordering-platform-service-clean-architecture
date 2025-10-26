@@ -1,10 +1,10 @@
-package com.example.demo.infrastructure.exception;
-public class PaymentException extends RuntimeException {
-    public PaymentException(String message) {
-        super(message);
-    }
-
-    public PaymentException(String message, Throwable cause) {
-        super(message, cause);
-    }
-}
+//package com.example.demo.infrastructure.exception;
+//public class PaymentException extends RuntimeException {
+//    public PaymentException(String message) {
+//        super(message);
+//    }
+//
+//    public PaymentException(String message, Throwable cause) {
+//        super(message, cause);
+//    }
+//}

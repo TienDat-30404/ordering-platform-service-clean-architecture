@@ -17,4 +17,5 @@ public interface OrderRepositoryPort {
     List<Order> findByUserId(UserId userId);
     OrderStatistics getStatistics();
     void updateStatus(String orderId, OrderStatus status);
+    Order findByIdAndUserId(OrderId orderId, UserId userId);
 }

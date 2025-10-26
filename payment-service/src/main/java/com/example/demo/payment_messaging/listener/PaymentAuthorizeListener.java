@@ -1,14 +1,14 @@
 package com.example.demo.payment_messaging.listener;
 
-import com.example.demo.payment.Topics;
+import com.example.common_dtos.enums.Topics;
 import com.example.demo.payment.service.PaymentService;
 import com.example.demo.payment_messaging.publisher.PaymentReplyPublisher;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -18,19 +18,22 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
-// ✅ NEW: chỉ để log cho đồng bộ, không ảnh hưởng hành vi
-import com.example.common_dtos.enums.PaymentStatus;
-
+// Log thủ công để tránh lệ thuộc Lombok @Slf4j
 @Component
-@RequiredArgsConstructor
-@Slf4j
 public class PaymentAuthorizeListener {
+
+    private static final Logger log = LoggerFactory.getLogger(PaymentAuthorizeListener.class);
 
     private final PaymentService paymentService;
     private final PaymentReplyPublisher publisher;
     private final ObjectMapper om = new ObjectMapper();
 
-    @KafkaListener(topics = Topics.PAYMENT_AUTHORIZE_COMMAND)
+    public PaymentAuthorizeListener(PaymentService paymentService, PaymentReplyPublisher publisher) {
+        this.paymentService = paymentService;
+        this.publisher = publisher;
+    }
+
+    @KafkaListener(topics = Topics.PAYMENT_AUTHORIZE_COMMAND, groupId = "payment-service-group")
     public void onAuthorize(ConsumerRecord<String, String> rec) throws Exception {
         String sagaId = header(rec, "sagaId");
         String replyTo = header(rec, "replyTo");
@@ -47,7 +50,6 @@ public class PaymentAuthorizeListener {
 
         String eventType;
         Map<String, Object> payload;
-        PaymentStatus statusForLog;
 
         if (result.approved()) {
             eventType = "PAYMENT_AUTHORIZED";
@@ -56,14 +58,12 @@ public class PaymentAuthorizeListener {
                     "transactionId", result.txId(),
                     "approvedAt", Instant.now().toString()
             );
-            statusForLog = PaymentStatus.AUTHORIZED;
         } else {
             eventType = "PAYMENT_FAILED";
             payload = Map.of(
                     "orderId", orderId,
                     "reason", result.reason()
             );
-            statusForLog = PaymentStatus.FAILED;
         }
 
         var envelope = Map.of(
@@ -76,7 +76,7 @@ public class PaymentAuthorizeListener {
         publisher.publish(
                 replyTo,
                 orderId,
-                toJson(envelope),
+                om.writeValueAsString(envelope),
                 Map.of(
                         "sagaId", sagaId == null ? UUID.randomUUID().toString() : sagaId,
                         "correlationId", UUID.randomUUID().toString(),
@@ -84,15 +84,11 @@ public class PaymentAuthorizeListener {
                 )
         );
 
-        log.info("[PAYMENT] Sent {} (status={}) for orderId={} to {}", eventType, statusForLog, orderId, replyTo);
+        log.info("[PAYMENT] Sent {} for orderId={} to {}", eventType, orderId, replyTo);
     }
 
-    private String header(ConsumerRecord<?,?> rec, String key) {
+    private static String header(ConsumerRecord<?,?> rec, String key) {
         Header h = rec.headers().lastHeader(key);
         return h == null ? null : new String(h.value(), StandardCharsets.UTF_8);
-    }
-
-    private String toJson(Object o) {
-        try { return om.writeValueAsString(o); } catch (Exception e) { throw new RuntimeException(e); }
     }
 }

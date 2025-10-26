@@ -22,4 +22,5 @@ public interface OrderJpaRepository extends JpaRepository<OrderJpaEntity, Long> 
     @Modifying
     @Query("update OrderJpaEntity o set o.status = :status where o.id = :id")
     int updateStatus(@Param("id") Long id, @Param("status") String status);
+    OrderJpaEntity findByIdAndUserId(Long orderId, Long userId);
 }
