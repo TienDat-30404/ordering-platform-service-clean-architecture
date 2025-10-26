@@ -6,6 +6,11 @@ server:
 spring:
   application:
     name: api-gateway
+
+  data:
+    redis:
+      host: redis 
+      port: 6379
   profiles:
     active: dev
 
@@ -33,7 +38,7 @@ spring:
                 key-resolver: '#{@customerIdKeyResolver}'
                 redis-rate-limiter.replenishRate: 1      
                 redis-rate-limiter.burstCapacity: 60     
-                redis-rate-limiter.requestedTokens: 30
+                redis-rate-limiter.requestedTokens: 5
 
         - id: order-service
           uri: lb://order-service
@@ -53,6 +58,11 @@ spring:
           uri : lb://user-service
           predicates:
             - Path=/api/v1/auth/**
+
+        - id: payment-service
+          uri : lb://payment-service
+          predicates:
+            - Path=/api/payments/**
 
        
        

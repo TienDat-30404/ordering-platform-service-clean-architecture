@@ -217,13 +217,16 @@ services:
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: password
       SERVER_PORT: 8080
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      MAIN_APP_CLASS: com.example.demo.DemoApplication
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
     volumes:
       - ./payment-service/target/classes:/app/classes
       - ./payment-service/src/main/resources:/app/resources
       - ./payment-service/target/dependency:/app/dependency
     working_dir: /app
     command: ["java", "-Dspring.application.name=payment-service", "-cp", "classes:resources:dependency/*", "com.example.demo.DemoApplication"]    
-    # restart: unless-stopped
+    restart: unless-stopped
     networks: [microservice-net]
 
   user-service:

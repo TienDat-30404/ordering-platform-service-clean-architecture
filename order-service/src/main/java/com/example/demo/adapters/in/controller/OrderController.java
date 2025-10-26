@@ -67,21 +67,14 @@ public class OrderController {
 
     // tạo đơn hàng
     @PostMapping
-    // public ResponseEntity<TrackOrderResponse> createOrder(
-    // @RequestBody CreateOrderCommand command) {
-    // Long userId = authenticatedUser.getUserId();
-    // TrackOrderResponse response = createOrderUseCase.createOrder(command,
-    // userId);
-    // return ResponseEntity.ok(response);
-    // }
     public ResponseEntity<TrackOrderResponse> createOrder(@RequestBody CreateOrderCommand command) {
         Long userId = authenticatedUser.getUserId();
         TrackOrderResponse res = createOrderUseCase.createOrder(command, userId); // lưu PENDING
 
-        orchestratorService.startCreateOrderSagaFromCommand(
-                res.getId().toString(),
-                res.getRestaurantId(),
-                command.getItems());
+        // orchestratorService.startCreateOrderSagaFromCommand(
+        //         res.getId().toString(),
+        //         res.getRestaurantId(),
+        //         command.getItems());
 
         return ResponseEntity.ok(res);
     }

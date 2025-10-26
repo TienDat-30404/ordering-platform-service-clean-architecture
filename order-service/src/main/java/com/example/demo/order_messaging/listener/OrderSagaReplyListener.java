@@ -15,26 +15,26 @@ import java.nio.charset.StandardCharsets;
 @RequiredArgsConstructor
 public class OrderSagaReplyListener {
 
-    private final OrderOrchestratorService orchestrator;
+    // private final OrderOrchestratorService orchestrator;
 
-    @KafkaListener(topics = "order.saga.reply", groupId = "order-service-group")
-    public void onReply(ConsumerRecord<String, String> rec) {
-        String eventType = header(rec, "eventType");
-        String sagaId    = header(rec, "sagaId");
+    // @KafkaListener(topics = "order.saga.reply", groupId = "order-service-group")
+    // public void onReply(ConsumerRecord<String, String> rec) {
+    //     String eventType = header(rec, "eventType");
+    //     String sagaId    = header(rec, "sagaId");
 
-        log.info("[ORDER<-SAGA] key={} eventType={} sagaId={} payload={}",
-                rec.key(), eventType, sagaId, rec.value());
+    //     log.info("[ORDER<-SAGA] key={} eventType={} sagaId={} payload={}",
+    //             rec.key(), eventType, sagaId, rec.value());
 
-        try {
-            orchestrator.onReply(rec);
-        } catch (Exception e) {
-            log.error("[ORDER<-SAGA] handle failed key={} eventType={} err={}",
-                    rec.key(), eventType, e.toString(), e);
-        }
-    }
+    //     try {
+    //         orchestrator.onReply(rec);
+    //     } catch (Exception e) {
+    //         log.error("[ORDER<-SAGA] handle failed key={} eventType={} err={}",
+    //                 rec.key(), eventType, e.toString(), e);
+    //     }
+    // }
 
-    private String header(ConsumerRecord<?, ?> rec, String key) {
-        Header h = rec.headers().lastHeader(key);
-        return h == null ? null : new String(h.value(), StandardCharsets.UTF_8);
-    }
+    // private String header(ConsumerRecord<?, ?> rec, String key) {
+    //     Header h = rec.headers().lastHeader(key);
+    //     return h == null ? null : new String(h.value(), StandardCharsets.UTF_8);
+    // }
 }

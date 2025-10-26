@@ -2,12 +2,7 @@ package com.example.demo.adapters.in.controller;
 
 import java.util.List;
 
-import org.hibernate.annotations.Cache;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.jaxb.PageAdapter;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;

@@ -1,5 +1,6 @@
 package com.example.demo.application.usecases;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Map; // Cần import Map
@@ -10,6 +11,7 @@ import com.example.common_dtos.dto.ItemValidationResponse;
 import com.example.demo.application.dto.command.CreateOrderCommand;
 import com.example.demo.application.dto.output.TrackOrderResponse;
 import com.example.demo.application.mapper.OrderMapper;
+import com.example.demo.application.orchestrator.OrderOrchestratorService;
 import com.example.demo.application.ports.input.CreateOrderUseCase;
 import com.example.demo.application.ports.output.external.RestaurantDataProviderPort;
 import com.example.demo.application.ports.output.repository.OrderRepositoryPort;
@@ -27,6 +29,7 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
     private final OrderRepositoryPort orderRepositoryPort;
     private final OrderMapper orderMapper;
     private final RestaurantDataProviderPort restaurantDataProviderPort;
+    private final OrderOrchestratorService orderOrchestratorService;
 
     @Transactional
     public TrackOrderResponse createOrder(CreateOrderCommand command, Long userId) {
@@ -41,7 +44,6 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
                 command.getRestaurantId(),
                 productIds);
 
-        System.out.println("verifiedDataaaaaaaaaaaaaaaaaaaa" + verifiedData);
 
         Map<Long, Integer> commandQuantityMap = command.getItems().stream()
                 .collect(Collectors.toMap(
@@ -49,7 +51,6 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
                         cmdItem -> cmdItem.getQuantity() // Value: int quantity
                 ));
 
-        System.out.println("commandQuantityMapcommandQuantityMap" + commandQuantityMap);
         // 3. Xây dựng Final Order Items: Kết hợp Price từ VerifiedData và Quantity từ
         // Command Map
         List<OrderItem> finalOrderItems = verifiedData.stream()
@@ -80,9 +81,57 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
         
         // 5. Lưu Order Aggregate
         Order savedOrder = orderRepositoryPort.save(order);
+        
+        List<Map<String, Object>> itemsPayload = orderMapper.toItemsPayload(savedOrder.getItems());
+        // orderOrchestratorService.startCreateOrderSaga(
+        //     savedOrder.getId().toString(),
+        //     savedOrder.getRestaurantId().toString(),
+        //     itemsPayload
+        // );
+        // BigDecimal totalAmountToPay = savedOrder.getFinalPrice();
+        BigDecimal totalAmountToPay = new BigDecimal("1000000.00");
+
+          orderOrchestratorService.startCreateOrderSaga(
+            savedOrder.getId().value(),
+            totalAmountToPay,
+            savedOrder.getUserId().value()
+        );
 
         // 6. Trả về Response
         TrackOrderResponse response = orderMapper.toOrderDTO(savedOrder);
         return response;
     }
 }
+
+
+
+// @Service
+// @RequiredArgsConstructor
+// public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
+//     private final OrderRepositoryPort orderRepositoryPort;
+//     private final OrderMapper orderMapper;
+//     // Bỏ restaurantDataProviderPort vì ta không gọi đồng bộ nữa.
+//     private final OrderOrchestratorService orderOrchestratorService; // Thêm Orchestrator
+
+//     @Transactional
+//     public TrackOrderResponse createOrder(CreateOrderCommand command, Long userId) {
+
+//         Order initialOrder = new Order(
+//             new UserId(userId),
+//             orderMapper.toOrderItems(command.getItems()), // Giả định có mapper chuyển đổi
+//             new RestaurantId(command.getRestaurantId()));
+
+//         Order savedOrder = orderRepositoryPort.save(initialOrder);
+//         List<Map<String, Object>> itemsPayload = orderMapper.toItemsPayload(savedOrder.getItems());
+     
+//         orderOrchestratorService.startCreateOrderSaga(
+//             savedOrder.getId().toString(),
+//             savedOrder.getRestaurantId().toString(),
+//             itemsPayload
+//         );
+        
+//         // 4. Trả về Response
+//         TrackOrderResponse response = orderMapper.toOrderDTO(savedOrder);
+//         return response;
+//     }
+// }

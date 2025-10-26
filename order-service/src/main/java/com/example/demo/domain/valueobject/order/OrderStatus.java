@@ -4,7 +4,9 @@ public enum OrderStatus {
     
     // Các trạng thái mặc định của đơn hàng
     PENDING("PENDING"),      
-    APPROVED("APPROVED");
+    APPROVED("APPROVED"),
+    CANCELED("CANCELED"),
+    PAID("PAID");
 
     private final String displayValue;
 
