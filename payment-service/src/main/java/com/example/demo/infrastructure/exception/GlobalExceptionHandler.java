@@ -15,36 +15,36 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(PaymentNotFound.class)
-    public ResponseEntity<Map<String, Object>> handlePaymentNotFound(PaymentNotFound ex) {
-        log.error("Payment not found: {}", ex.getMessage());
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.NOT_FOUND.value());
-        response.put("error", "Payment Not Found");
-        response.put("message", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-    }
+   @ExceptionHandler(PaymentNotFound.class)
+   public ResponseEntity<Map<String, Object>> handlePaymentNotFound(PaymentNotFound ex) {
+       log.error("Payment not found: {}", ex.getMessage());
+       Map<String, Object> response = new HashMap<>();
+       response.put("timestamp", LocalDateTime.now());
+       response.put("status", HttpStatus.NOT_FOUND.value());
+       response.put("error", "Payment Not Found");
+       response.put("message", ex.getMessage());
+       return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+   }
 
-    @ExceptionHandler(PaymentException.class)
-    public ResponseEntity<Map<String, Object>> handlePaymentException(PaymentException ex) {
-        log.error("Payment exception: {}", ex.getMessage());
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.BAD_REQUEST.value());
-        response.put("error", "Payment Error");
-        response.put("message", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-    }
+   @ExceptionHandler(PaymentException.class)
+   public ResponseEntity<Map<String, Object>> handlePaymentException(PaymentException ex) {
+       log.error("Payment exception: {}", ex.getMessage());
+       Map<String, Object> response = new HashMap<>();
+       response.put("timestamp", LocalDateTime.now());
+       response.put("status", HttpStatus.BAD_REQUEST.value());
+       response.put("error", "Payment Error");
+       response.put("message", ex.getMessage());
+       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+   }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
-        log.error("Unexpected error: {}", ex.getMessage(), ex);
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        response.put("error", "Internal Server Error");
-        response.put("message", "An unexpected error occurred");
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-    }
+   @ExceptionHandler(Exception.class)
+   public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
+       log.error("Unexpected error: {}", ex.getMessage(), ex);
+       Map<String, Object> response = new HashMap<>();
+       response.put("timestamp", LocalDateTime.now());
+       response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+       response.put("error", "Internal Server Error");
+       response.put("message", "An unexpected error occurred");
+       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+   }
 }

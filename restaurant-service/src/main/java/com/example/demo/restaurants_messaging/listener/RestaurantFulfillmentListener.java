@@ -1,6 +1,8 @@
 package com.example.demo.restaurants_messaging.listener;
 
 import com.example.common_dtos.enums.Topics;
+import com.example.demo.application.dto.stock.StockCheckItem;
+import com.example.demo.application.ports.input.DeductStockUseCase;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -14,8 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -23,6 +24,7 @@ import java.util.UUID;
 public class RestaurantFulfillmentListener {
 
     private final KafkaTemplate<String, String> template;
+    private final DeductStockUseCase deductStockUseCase; // ✅ inject use case trừ kho
     private final ObjectMapper om = new ObjectMapper();
 
     @KafkaListener(topics = Topics.RESTAURANT_FULFILL_COMMAND, groupId = "restaurant-service-group")
@@ -40,20 +42,39 @@ public class RestaurantFulfillmentListener {
 
         switch (eventType) {
             case "START_PREPARATION" -> {
-                // cập nhật domain: PREPARING (nếu bạn có)
                 reply(replyTo, orderId, sagaId, "RESTAURANT_PREPARING", Map.of(
                         "restaurantStatus", "PREPARING",
                         "note", "kitchen started"
                 ));
-
             }
+
             case "COMPLETE_ORDER" -> {
-                // bếp hoàn tất → gửi COMPLETED
                 reply(replyTo, orderId, sagaId, "RESTAURANT_COMPLETED", Map.of(
                         "restaurantStatus", "COMPLETED",
                         "completedAt", Instant.now().toString()
                 ));
             }
+
+            // ✅ Thêm case này để thực sự trừ kho
+            case "DEDUCT_STOCK" -> {
+                var itemsNode = root.path("payload").path("items");
+                List<StockCheckItem> items = new ArrayList<>();
+                for (JsonNode it : itemsNode) {
+                    Long pid = it.path("productId").asLong();
+                    int qty = it.path("quantity").asInt(1);
+                    items.add(new StockCheckItem(pid, qty));
+                }
+                log.info("[RESTAURANT] DEDUCT_STOCK request items={}", items);
+                deductStockUseCase.deduct(items); // ✅ gọi vào domain/service trừ kho
+
+                // gửi reply về saga nếu cần
+                reply(replyTo, orderId, sagaId, "STOCK_DEDUCTED", Map.of(
+                        "status", "OK",
+                        "deductedCount", items.size(),
+                        "timestamp", Instant.now().toString()
+                ));
+            }
+
             default -> log.warn("[RESTAURANT FULFILL] Unknown eventType={} orderId={}", eventType, orderId);
         }
     }

@@ -30,6 +30,8 @@ public class RestaurantController {
     private final ValidateMenuItemUseCase validationService;
     private final GetMenuItemsUseCase getMenuItemsUseCase;
     private final RestaurantJpaRepository restaurantJpaRepository;
+    private final com.example.demo.application.ports.input.CheckStockUseCase checkStockUseCase;
+    private final com.example.demo.application.ports.input.DeductStockUseCase deductStockUseCase;
 
     @PostMapping("/validate-menu-items")
     public ResponseEntity<List<ItemValidationResponse>> validateMenuItems(
@@ -99,5 +101,18 @@ public class RestaurantController {
                 })
                 .toList();
         return dtos;
+    }
+
+    @PostMapping("/stock/check")
+    public ResponseEntity<List<com.example.demo.application.dto.stock.StockCheckResult>>
+    checkStock(@RequestBody List<com.example.demo.application.dto.stock.StockCheckItem> items) {
+        var result = checkStockUseCase.check(items);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/stock/deduct")
+    public ResponseEntity<Void> deductStock(@RequestBody List<com.example.demo.application.dto.stock.StockCheckItem> items) {
+        deductStockUseCase.deduct(items);
+        return ResponseEntity.ok().build();
     }
 }

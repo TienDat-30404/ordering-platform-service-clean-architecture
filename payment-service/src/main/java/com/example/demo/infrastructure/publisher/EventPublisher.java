@@ -19,20 +19,20 @@ import com.example.demo.domain.event.RefundCompletedEvent;
 @RequiredArgsConstructor
 public class EventPublisher {
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+   private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public void publishPaymentAuthorized(PaymentAuthorizedEvent event) {
-        log.info("Publishing PaymentAuthorized event for order: {}", event.getOrderId());
-        kafkaTemplate.send(KafkaConfig.PAYMENT_AUTHORIZED_TOPIC, event.getOrderId().toString(), event);
-    }
+   public void publishPaymentAuthorized(PaymentAuthorizedEvent event) {
+       log.info("Publishing PaymentAuthorized event for order: {}", event.getOrderId());
+       kafkaTemplate.send(KafkaConfig.PAYMENT_AUTHORIZED_TOPIC, event.getOrderId().toString(), event);
+   }
 
-    public void publishPaymentFailed(PaymentFailedEvent event) {
-        log.info("Publishing PaymentFailed event for order: {}", event.getOrderId());
-        kafkaTemplate.send(KafkaConfig.PAYMENT_FAILED_TOPIC, event.getOrderId().toString(), event);
-    }
+   public void publishPaymentFailed(PaymentFailedEvent event) {
+       log.info("Publishing PaymentFailed event for order: {}", event.getOrderId());
+       kafkaTemplate.send(KafkaConfig.PAYMENT_FAILED_TOPIC, event.getOrderId().toString(), event);
+   }
 
-    public void publishRefundCompleted(RefundCompletedEvent event) {
-        log.info("Publishing RefundCompleted event for order: {}", event.getOrderId());
-        kafkaTemplate.send(KafkaConfig.REFUND_COMPLETED_TOPIC, event.getOrderId().toString(), event);
-    }
+   public void publishRefundCompleted(RefundCompletedEvent event) {
+       log.info("Publishing RefundCompleted event for order: {}", event.getOrderId());
+       kafkaTemplate.send(KafkaConfig.REFUND_COMPLETED_TOPIC, event.getOrderId().toString(), event);
+   }
 }

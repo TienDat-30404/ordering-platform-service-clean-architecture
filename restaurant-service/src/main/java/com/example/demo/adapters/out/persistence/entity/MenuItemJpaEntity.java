@@ -21,7 +21,7 @@ public class MenuItemJpaEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "restaurant_id")
+    @JoinColumn(name = "restaurant_id", nullable = false)
     private RestaurantJpaEntity restaurant; 
     
     private String name;
@@ -30,6 +30,11 @@ public class MenuItemJpaEntity {
     private String category;
     private Boolean available;
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;    
- 
+    private LocalDateTime updatedAt;
+
+    @Column(nullable = false)
+    private Integer quantity;  // tồn kho
+
+    @Version
+    private Long version;          // kiểm soát race condition
 }

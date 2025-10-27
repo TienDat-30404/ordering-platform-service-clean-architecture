@@ -27,31 +27,31 @@ import com.example.demo.domain.valueobject.PaymentStatus;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentEntity {
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long paymentId;
-    
-    @Column(nullable = false)
 
-    private Long orderId;
-    
-    @Column(nullable = false)
-    private Long userId;
-    
-    @Column(nullable = false)
-    private BigDecimal amount;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PaymentStatus status;
-    
-    private String transactionId;
-    
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-    
-    private LocalDateTime updatedAt;
-    
-    private String failureReason;
+   @Id
+   @GeneratedValue(strategy = GenerationType.IDENTITY)
+   private Long paymentId;
+
+   @Column(nullable = false)
+
+   private Long orderId;
+
+   @Column(nullable = false)
+   private Long userId;
+
+   @Column(nullable = false)
+   private BigDecimal amount;
+
+   @Enumerated(EnumType.STRING)
+   @Column(nullable = false)
+   private PaymentStatus status;
+
+   private String transactionId;
+
+   @Column(nullable = false)
+   private LocalDateTime createdAt;
+
+   private LocalDateTime updatedAt;
+
+   private String failureReason;
 }

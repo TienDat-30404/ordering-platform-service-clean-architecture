@@ -1,10 +1,10 @@
+
 spring:
   application:
     name: restaurant-service
 
   kafka:
     bootstrap-servers: kafka:9092
-    # bootstrap-servers: localhost:9092
     consumer:
       group-id: restaurant-service-group
       auto-offset-reset: earliest
@@ -13,19 +13,20 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    # Nếu chạy local, bạn có thể đổi:
+    # bootstrap-servers: localhost:9092
 
   datasource:
     url: jdbc:postgresql://restaurant-db:5432/restaurant_service_clean_architecture
     # url: jdbc:postgresql://localhost:5432/restaurant_service_clean_architecture
-
     username: postgres
     password:
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: update        # create, create-drop, update, none
-    show-sql: true            # log SQL ra console
+      ddl-auto: update          # create, create-drop, update, none
+    show-sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     defer-datasource-initialization: true
     properties:
@@ -36,38 +37,29 @@ spring:
     host: redis
     port: 6379
 
-  sql.init.mode : always  # Luôn chạy file schema.sql và data.sql khi khởi động
+  sql:
+    init:
+      mode: always              # luôn chạy schema.sql, data.sql (nếu có)
 
-
-  # Optional: Log format dễ đọc hơn
-  jpa.properties.hibernate.format_sql: true
-
-# logging:
-#   level:
-#     root: INFO
-#     com.example.demo: INFO
-
+logging:
+  level:
+    root: INFO
+    org.springframework.kafka: INFO
+    com.example.demo: INFO      # cần debug sâu có thể chuyển DEBUG
 
 eureka:
   client:
     service-url:
       # defaultZone: http://localhost:8761/eureka/
       defaultZone: http://discovery-server:8761/eureka/
-
     register-with-eureka: true
     fetch-registry: true
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${spring.application.instance_id:${server.port}}
 
-
 server:
   port: 8081
-
-logging:
-  level:
-    root: INFO
-    org.springframework.kafka: INFO
 
 management:
   endpoints:
@@ -77,3 +69,4 @@ management:
   endpoint:
     prometheus:
       enabled: true
+

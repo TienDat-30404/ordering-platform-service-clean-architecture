@@ -39,7 +39,7 @@ public class RestaurantJpaEntity {
     @Column(name = "totalRatings")
     private Integer totalRatings;
 
-    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<MenuItemJpaEntity> menu = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false)

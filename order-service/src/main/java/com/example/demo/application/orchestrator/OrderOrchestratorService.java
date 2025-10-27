@@ -4,15 +4,13 @@ import com.example.common_dtos.dto.PaymentResponseData;
 import com.example.demo.application.ports.output.repository.OrderRepositoryPort;
 import com.example.demo.application.ports.output.external.RestaurantDataProviderPort;
 import com.example.demo.application.dto.output.ProductDetailData;
-import com.example.common_dtos.enums.Topics;
-import com.example.demo.application.ports.input.UpdateOrderStatusUseCase;
-import com.example.common_dtos.enums.OrderStatus;
-import com.example.demo.application.dto.command.CreateOrderItemCommand;
 import com.example.demo.application.dto.saga.AuthorizePaymentCommandData;
 import com.example.demo.application.ports.input.CanceledOrderUseCase;
 import com.example.demo.application.ports.input.ConfirmOrderPaidUseCase;
+import com.example.demo.application.ports.input.UpdateOrderStatusUseCase;
+import com.example.common_dtos.enums.OrderStatus;
+import com.example.demo.application.dto.command.CreateOrderItemCommand;
 import com.example.demo.application.ports.output.OrderPublisher.OrderEventPublisher;
-import com.example.demo.application.ports.output.repository.OrderRepositoryPort;
 import com.example.demo.domain.entity.Order;
 import com.example.demo.domain.event.SagaEnvelope;
 import com.example.demo.domain.valueobject.order.OrderId;
@@ -20,8 +18,6 @@ import com.example.demo.domain.valueobject.order.OrderId;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.transaction.Transactional;
-import lombok.Builder;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -30,7 +26,6 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.stereotype.Service;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -58,29 +53,26 @@ public class OrderOrchestratorService {
 
     // ===== Controller có thể truyền Long hoặc String =====
     public void startCreateOrderSagaFromCommand(String orderId,
-            Long restaurantId,
-            List<CreateOrderItemCommand> items) {
-        if (restaurantId == null)
-            throw new IllegalArgumentException("restaurantId is required");
+                                                Long restaurantId,
+                                                List<CreateOrderItemCommand> items) {
+        if (restaurantId == null) throw new IllegalArgumentException("restaurantId is required");
         startCreateOrderSagaFromCommand(orderId, String.valueOf(restaurantId), items);
     }
 
     public void startCreateOrderSagaFromCommand(String orderId,
-            String restaurantId,
-            List<CreateOrderItemCommand> items) {
-        if (orderId == null || orderId.isBlank())
-            throw new IllegalArgumentException("orderId is required");
-        if (restaurantId == null || restaurantId.isBlank())
-            throw new IllegalArgumentException("restaurantId is required");
-        if (items == null || items.isEmpty())
-            throw new IllegalArgumentException("items are required");
+                                                String restaurantId,
+                                                List<CreateOrderItemCommand> items) {
+        if (orderId == null || orderId.isBlank()) throw new IllegalArgumentException("orderId is required");
+        if (restaurantId == null || restaurantId.isBlank()) throw new IllegalArgumentException("restaurantId is required");
+        if (items == null || items.isEmpty()) throw new IllegalArgumentException("items are required");
 
         // Gom item trùng productId, bảo đảm quantity >= 1
         List<Map<String, Object>> itemsPayload = items.stream()
                 .collect(Collectors.groupingBy(
                         CreateOrderItemCommand::getProductId,
                         LinkedHashMap::new,
-                        Collectors.summingInt(i -> Optional.ofNullable(i.getQuantity()).orElse(0))))
+                        Collectors.summingInt(i -> Optional.ofNullable(i.getQuantity()).orElse(0))
+                ))
                 .entrySet().stream()
                 .map(e -> {
                     Map<String, Object> m = new LinkedHashMap<>();
@@ -89,6 +81,7 @@ public class OrderOrchestratorService {
                     return m;
                 })
                 .collect(Collectors.toList());
+
         startCreateOrderSaga(orderId, restaurantId, itemsPayload);
     }
 
@@ -157,7 +150,7 @@ public class OrderOrchestratorService {
                 callRestaurantStartPreparation(rec, orderId);
             }
             case "RESTAURANT_ITEMS_INVALID" -> {
-                // ✅ BỒI HOÀN HOLD
+                //BỒI HOÀN HOLD
                 callPaymentCancel(rec, orderId, "menu invalid");
                 updateOrderStatus.setStatus(orderId, OrderStatus.CANCELLING);
             }
@@ -171,16 +164,18 @@ public class OrderOrchestratorService {
             }
             case "RESTAURANT_COMPLETED" -> {
                 updateOrderStatus.setStatus(orderId, OrderStatus.COMPLETED);
-                // confirmOrder(orderId);
+                callRestaurantDeductStock(rec, orderId);
+                confirmOrder(orderId);
             }
+
             default -> log.warn("[SAGA] Unknown eventType={} for orderId={}", event, orderId);
         }
 
     }
 
-    private void callPaymentAuthorize(ConsumerRecord<String, String> rec,
-            String orderId,
-            com.fasterxml.jackson.databind.JsonNode root) {
+    private void callPaymentAuthorize(ConsumerRecord<String,String> rec,
+                                      String orderId,
+                                      com.fasterxml.jackson.databind.JsonNode root) {
         String sagaId = header(rec, "sagaId");
 
         SagaEnvelope env = SagaEnvelope.builder()
@@ -229,15 +224,21 @@ public class OrderOrchestratorService {
         //     return; 
         // }
         canceledOrderUseCase.canceled(order);
+    }
 
+    private void confirmOrder(String orderId) {
+        log.info("[SAGA] Order {} confirmed", orderId);
+    }
+
+    private void cancelOrder(String orderId, String reason) {
+        log.warn("[SAGA] Order {} cancelled: {}", orderId, reason);
     }
 
     // ===== helpers =====
-    private String header(ConsumerRecord<?, ?> rec, String key) {
+    private String header(ConsumerRecord<?,?> rec, String key) {
         Header h = rec.headers().lastHeader(key);
         return h == null ? null : new String(h.value(), StandardCharsets.UTF_8);
     }
-
     private String toJson(Object o) {
         try {
             return om.writeValueAsString(o);
@@ -345,7 +346,6 @@ public class OrderOrchestratorService {
             return;
         }
 
-        return;
     }
 
     public void sendCancelPaymentCommand(Long orderId,
@@ -456,17 +456,15 @@ public class OrderOrchestratorService {
     private void callRestaurantValidate(org.apache.kafka.clients.consumer.ConsumerRecord<String,String> rec, String orderId) {
         String sagaId = header(rec, "sagaId");
         try {
-            // ✅ ƯU TIÊN lấy từ cache tạm (tránh lỗi DB/Lazy)
             String restaurantId = pendingRestaurant.get(orderId);
             var itemsPayload = pendingItems.get(orderId);
 
-            // Fallback nếu cache rỗng → đọc DB (tùy)
             if (restaurantId == null) {
                 var order = orderRepository.findById(new com.example.demo.domain.valueobject.order.OrderId(Long.valueOf(orderId)));
-                restaurantId = String.valueOf(order.getRestaurantId());
+                restaurantId = String.valueOf(order.getRestaurantId().value());
             }
             if (itemsPayload == null || itemsPayload.isEmpty()) {
-                itemsPayload = buildItemsPayloadFromOrder(orderId); // giữ helper cũ làm dự phòng
+                itemsPayload = buildItemsPayloadFromOrder(orderId);
             }
 
             log.info("[SAGA] VALIDATE using restaurantId={} items={}", restaurantId, itemsPayload);
@@ -477,7 +475,8 @@ public class OrderOrchestratorService {
             env.put("restaurantId", restaurantId);
             env.put("payload", java.util.Map.of(
                     "restaurantId", restaurantId,
-                    "items", itemsPayload
+                    "items", itemsPayload,
+                    "checkStock", true
             ));
             env.put("timestamp", java.time.Instant.now().toString());
 
@@ -493,13 +492,13 @@ public class OrderOrchestratorService {
 
             log.info("[SAGA->RESTAURANT] VALIDATE_MENU_ITEMS topic={} key={} headers={} payload={}",
                     com.example.common_dtos.enums.Topics.RESTAURANT_VALIDATE_COMMAND, orderId, headers, json);
-            log.info("[DIAG] ENTER callRestaurantValidate sagaId={} orderId={}", sagaId, orderId);
-            log.info("[DIAG] VALIDATE using restaurantId={} items={}", restaurantId, itemsPayload);
+
             publisher.publish(com.example.common_dtos.enums.Topics.RESTAURANT_VALIDATE_COMMAND, orderId, json, headers);
         } catch (Throwable ex) {
             log.error("[SAGA] callRestaurantValidate failed for orderId={} err={}", orderId, ex.toString(), ex);
         }
     }
+
 
     private void clearPending(String orderId) {
         pendingItems.remove(orderId);
@@ -634,5 +633,40 @@ public class OrderOrchestratorService {
         return items;
     }
 
+    private void callRestaurantDeductStock(ConsumerRecord<String,String> rec, String orderId) {
+        String sagaId = header(rec, "sagaId");
+        try {
+            // lấy items từ cache; thiếu thì dựng lại từ DB
+            var itemsPayload = pendingItems.get(orderId);
+            if (itemsPayload == null || itemsPayload.isEmpty()) {
+                itemsPayload = buildItemsPayloadFromOrder(orderId);
+            }
+
+            var env = new LinkedHashMap<String, Object>();
+            env.put("eventType", "DEDUCT_STOCK");
+            env.put("orderId", orderId);
+            env.put("payload", Map.of("items", itemsPayload));
+            env.put("timestamp", Instant.now().toString());
+
+            String json = toJson(env);
+
+            Map<String, String> headers = Map.of(
+                    "sagaId", sagaId == null ? UUID.randomUUID().toString() : sagaId,
+                    "correlationId", UUID.randomUUID().toString(),
+                    "replyTo", Topics.ORDER_SAGA_REPLY,
+                    "eventType", "DEDUCT_STOCK"
+            );
+
+            log.info("[SAGA->RESTAURANT] DEDUCT_STOCK topic={} key={} headers={} payload={}",
+                    Topics.RESTAURANT_FULFILL_COMMAND, orderId, headers, json);
+
+            publisher.publish(Topics.RESTAURANT_FULFILL_COMMAND, orderId, json, headers);
+
+            // sau khi deduct thì có thể clear cache tạm
+            clearPending(orderId);
+        } catch (Throwable ex) {
+            log.error("[SAGA] callRestaurantDeductStock failed for orderId={} err={}", orderId, ex.toString(), ex);
+        }
+    }
 
 }

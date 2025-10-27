@@ -19,9 +19,8 @@ public interface OrderJpaRepository extends JpaRepository<OrderJpaEntity, Long> 
             "  AVG(o.amount) AS averageOrderValue " +
             "FROM OrderJpaEntity o")
     OrderStatisticsJpaProjection getOrderStatistics();
-
-    OrderJpaEntity findByIdAndUserId(Long orderId, Long userId);
     @Modifying
     @Query("update OrderJpaEntity o set o.status = :status where o.id = :id")
     int updateStatus(@Param("id") Long id, @Param("status") String status);
+    OrderJpaEntity findByIdAndUserId(Long orderId, Long userId);
 }
