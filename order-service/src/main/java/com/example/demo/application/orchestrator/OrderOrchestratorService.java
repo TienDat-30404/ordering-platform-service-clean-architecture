@@ -314,14 +314,7 @@ public class OrderOrchestratorService {
                     System.out.println("1111111111111111111111111111111111111111111111111111111111");
                     log.info("[SAGA] Payment success for order {}. Proceeding to Inventory/Confirmation.", orderId);
                     confirmOrderPaid(orderId); // Bỏ comment và gọi hàm
-                    BigDecimal totalAmount = response.amount();
-
-                    sendCancelPaymentCommand(
-                    response.orderId(),
-                    totalAmount,
-                    userId,
-                    sagaId,
-                    corrId);
+                    
                     break;
                 case "FAILED":
                     System.out.println("2222222222222222222222222222222222222222222222222222222222222222222");
