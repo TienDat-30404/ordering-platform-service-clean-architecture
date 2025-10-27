@@ -6,7 +6,7 @@ import com.example.demo.domain.entity.Order;
 import com.example.demo.domain.entity.OrderItem;
 import com.example.demo.domain.valueobject.order.OrderId;
 import com.example.demo.domain.valueobject.order.OrderItemId;
-import com.example.demo.domain.valueobject.order.OrderStatus;
+import com.example.common_dtos.enums.OrderStatus;
 import com.example.demo.domain.valueobject.order.RestaurantId;
 import com.example.demo.domain.valueobject.product.ProductId;
 import com.example.demo.domain.valueobject.user.UserId;
@@ -29,7 +29,7 @@ public class OrderPersistenceMapper {
         }
         entity.setUserId(order.getUserId().value());
         entity.setAmount(order.getAmount());
-        entity.setStatus(order.getStatus().getName());
+        entity.setStatus(order.getStatus().name());
         entity.setCreatedAt(order.getCreatedAt());
         entity.setHasBeenRated(order.getHasBeenRated());
         entity.setRestaurantId(order.getRestaurantId().value());

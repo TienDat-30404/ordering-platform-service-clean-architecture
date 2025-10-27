@@ -18,6 +18,11 @@ public class RestaurantEventPublisher {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
 
+    /** Overload tiện: không cần headers */
+    public void publish(String topic, String key, String payload) {
+        publish(topic, key, payload, Map.of());
+    }
+
     /**
      * Phát event sang topic cụ thể (ví dụ: restaurant.validate.command)
      * @param topic   topic Kafka cần gửi
@@ -29,9 +34,11 @@ public class RestaurantEventPublisher {
         try {
             ProducerRecord<String, String> record = new ProducerRecord<>(topic, key, payload);
 
-            if (headers != null) {
+            if (headers != null && !headers.isEmpty()) {
                 headers.forEach((k, v) -> {
-                    if (v != null) record.headers().add(k, v.getBytes(StandardCharsets.UTF_8));
+                    if (k != null && !k.isBlank() && v != null) {
+                        record.headers().add(k, v.getBytes(StandardCharsets.UTF_8));
+                    }
                 });
             }
 
@@ -55,9 +62,11 @@ public class RestaurantEventPublisher {
     public void publishAndWait(String topic, String key, String payload, Map<String, String> headers, long timeoutMs) {
         try {
             ProducerRecord<String, String> record = new ProducerRecord<>(topic, key, payload);
-            if (headers != null) {
+            if (headers != null && !headers.isEmpty()) {
                 headers.forEach((k, v) -> {
-                    if (v != null) record.headers().add(k, v.getBytes(StandardCharsets.UTF_8));
+                    if (k != null && !k.isBlank() && v != null) {
+                        record.headers().add(k, v.getBytes(StandardCharsets.UTF_8));
+                    }
                 });
             }
             var future = kafkaTemplate.send(record);

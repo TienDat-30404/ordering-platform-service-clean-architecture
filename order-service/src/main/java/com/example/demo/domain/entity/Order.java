@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.example.demo.domain.valueobject.order.OrderId;
-import com.example.demo.domain.valueobject.order.OrderStatus;
+import com.example.common_dtos.enums.OrderStatus;
 import com.example.demo.domain.valueobject.order.RestaurantId;
 import com.example.demo.domain.valueobject.order.Voucher;
 import com.example.demo.domain.valueobject.product.ProductId;
@@ -106,7 +106,7 @@ public class Order {
     }
 
      public void canceled() {
-        this.status = OrderStatus.CANCELED;
+        this.status = OrderStatus.CANCELLED;
     }
 
     private void calculateFinalPrice() {

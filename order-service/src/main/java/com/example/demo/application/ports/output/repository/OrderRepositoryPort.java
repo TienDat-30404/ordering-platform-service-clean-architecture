@@ -5,6 +5,7 @@ import java.util.List;
 import com.example.demo.domain.entity.Order;
 import com.example.demo.domain.valueobject.order.OrderId;
 import com.example.demo.domain.valueobject.order.OrderStatistics;
+import com.example.common_dtos.enums.OrderStatus;
 import com.example.demo.domain.valueobject.user.UserId;
 
 
@@ -17,4 +18,5 @@ public interface OrderRepositoryPort {
     OrderStatistics getStatistics();
     Order findByIdAndUserId(OrderId orderId, UserId userId);
 
+    void updateStatus(String orderId, OrderStatus status);
 }

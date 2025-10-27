@@ -3,7 +3,7 @@ package com.example.demo.domain.entity;
 import java.time.Instant;
 import com.example.demo.domain.valueobject.order.OrderId;
 import com.example.demo.domain.valueobject.order.OrderRatingId;
-import com.example.demo.domain.valueobject.order.OrderStatus;
+import com.example.common_dtos.enums.OrderStatus;
 import com.example.demo.domain.valueobject.order.RatingScore;
 import com.example.demo.domain.valueobject.user.UserId;
 
