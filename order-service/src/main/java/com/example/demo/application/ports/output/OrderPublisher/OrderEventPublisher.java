@@ -4,4 +4,5 @@ import java.util.Map;
 
 public interface OrderEventPublisher {
     void publish(String topic, String key, String jsonPayload, Map<String, String> headers);
+    void testPublish(String topic, String key);
 }

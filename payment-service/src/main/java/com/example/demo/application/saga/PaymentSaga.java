@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.springframework.kafka.annotation.KafkaListener;
@@ -38,37 +39,62 @@ public class PaymentSaga {
     private final PaymentDomainService paymentDomainService;
     private final OrchestratorResponsePublisher orchestratorResponsePublisher;
 
-    @KafkaListener(topics = "payment.authorize.command", groupId = "payment-service-group")
+    @KafkaListener(topics = "payment.command", groupId = "payment-service-group")
     @Transactional
     public void handleAuthorizePaymentCommand(@Payload AuthorizePaymentCommandData event,
             @Headers Map<String, Object> headers) {
-        log.info("[LISTENER] Received AuthorizePayment command for order: {}", event.getOrderId());
-        // String sagaId = (String) headers.get("sagaId");
-        System.out.println("sagaaaIdddddddd" + headers);
+        System.out.println("headddddddddddddddddddddddđ" + headers);
         PaymentResponseData response = null;
+        byte[] eventTypeBytes = (byte[]) headers.get("eventType");
+        String eventType = new String(eventTypeBytes, StandardCharsets.UTF_8);
 
+        System.out.println("eventTYpeeeeeeeeeeeeeeee: " + eventType);
         try {
-            // 1. Tạo Payment (Idempotency check qua findByOrderId)
-            Payment payment = paymentRepository.findByOrderId(event.getOrderId())
-                    .orElseGet(() -> {
-                        log.info("[LISTENER] Creating new Payment record for order: {}", event.getOrderId());
-                        Payment newPayment = paymentDomainService.createPayment(
-                                event.getOrderId(), event.getUserId(), event.getAmount());
-                        return paymentRepository.save(newPayment);
-                    });
+            switch (eventType) {
+                case "AUTHORIZE_PAYMENT":
 
-            // 2. Chuẩn bị Command
-            AuthorizePaymentCommand command = new AuthorizePaymentCommand(
-                    event.getOrderId(), event.getUserId(), event.getAmount(), payment.getPaymentId());
+                    Payment payment = paymentRepository.findByOrderId(event.getOrderId())
+                            .orElseGet(() -> {
+                                log.info("[LISTENER] Creating new Payment record for order: {}", event.getOrderId());
+                                Payment newPayment = paymentDomainService.createPayment(
+                                        event.getOrderId(), event.getUserId(), event.getAmount());
+                                return paymentRepository.save(newPayment);
+                            });
 
-            // 3. Gọi Application Service và nhận phản hồi
-            response = paymentApplicationService.authorizePayment(command);
+                    AuthorizePaymentCommand command = new AuthorizePaymentCommand(
+                            event.getOrderId(), event.getUserId(), event.getAmount(), payment.getPaymentId());
+
+                    response = paymentApplicationService.authorizePayment(command);
+                    break;
+                case "CANCEL_PAYMENT":
+                    log.info("[CANCEL] Received CANCEL_PAYMENT command for order: {}", event.getOrderId());
+                    
+                    // 1. Tìm Payment đã tạo trước đó
+                    Payment existingPayment = paymentRepository.findByOrderId(event.getOrderId())
+                            .orElseThrow(() -> {
+                                // Nếu không tìm thấy, ném lỗi để gửi về DLQ/Retry
+                                log.error("[CANCEL] Refund failed: Payment record not found for order {}", event.getOrderId());
+                                return new RuntimeException("Payment not found for order: " + event.getOrderId());
+                            });
+        
+                    // 2. Tạo Refund Command
+                    RefundPaymentCommand refundCommand = new RefundPaymentCommand(
+                            event.getOrderId(),
+                            existingPayment.getPaymentId(),
+                            event.getAmount(),
+                            "Cancelled by Order Saga");
+
+                    // 3. Thực thi Refund & Gán phản hồi
+                    response = paymentApplicationService.refundPayment(refundCommand);
+                    log.info("[CANCEL] Refund successful for order {}. Status: {}", event.getOrderId(), response.status());
+                    break;
+
+            }
 
         } catch (Exception e) {
             log.error("[LISTENER] Critical error during Payment creation/authorization for order: {}",
                     event.getOrderId(), e);
 
-       
             response = new PaymentResponseData(
                     null, event.getOrderId(), event.getUserId(), "FAILED", event.getAmount(), null,
                     "Critical system failure during command handling: " + e.getMessage());
@@ -76,30 +102,58 @@ public class PaymentSaga {
             // return;
         } finally {
             System.out.println("publicResponseeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
-            System.out.println("responseeeeeeeeeeeeeeeeeeee" + response);
             if (response != null) {
-                orchestratorResponsePublisher.publishResponse(response);
+                System.out.println("responseeeeeeeeeeeeeeeeeeee" + response);
+                System.out.println("headerrrrrrrrrrrrrrrrrrrs" + headers);
+                orchestratorResponsePublisher.publishResponse(response, headers);
             }
         }
     }
 
-    // @KafkaListener(topics = KafkaConfig.REFUND_REQUESTED_TOPIC, groupId =
+    // @KafkaListener(topics = "refund_payment", groupId =
     // "payment-service-group")
-    public void handleRefundRequested(RefundRequestedEvent event) {
-        log.info("Received RefundRequested event for order: {}", event.getOrderId());
+    public void handleRefundPaymentCommand(@Payload RefundRequestedEvent event,
+            @Headers Map<String, Object> headers) {
+        log.info("[LISTENER] Received Refund command for order: {}", event.getOrderId());
+        PaymentResponseData response = null;
 
         try {
+
+            // 1. Tìm Payment (Idempotency check qua findByOrderId)
             Payment payment = paymentRepository.findByOrderId(event.getOrderId())
-                    .orElseThrow(() -> new RuntimeException("Payment not found for order: " + event.getOrderId()));
+                    .orElseThrow(() -> {
+                        log.error("[LISTENER] Refund failed: Payment record not found for order {}",
+                                event.getOrderId());
+                        throw new RuntimeException("Payment not found for order: " + event.getOrderId());
+                    });
 
             RefundPaymentCommand command = new RefundPaymentCommand(
                     event.getOrderId(),
                     payment.getPaymentId(),
                     event.getAmount(),
                     event.getReason());
-            paymentApplicationService.refundPayment(command);
-        } catch (Exception e) {
-            log.error("Error handling RefundRequested event", e);
+
+            // 3. GỌI APPLICATION SERVICE VÀ NHẬN PHẢN HỒI
+            // Hàm refundPayment sẽ trả về PaymentResponseData với status cuối cùng
+            response = paymentApplicationService.refundPayment(command);
+
+        } catch (RuntimeException e) {
+            log.error("[LISTENER] Error during Refund command handling for order: {}", event.getOrderId(), e);
+
+            response = new PaymentResponseData(
+                    null,
+                    event.getOrderId(),
+                    event.getUserId(),
+                    "REFUND_FAILED", // Status FAILED
+                    event.getAmount(),
+                    null,
+                    "System error or Payment not found: " + e.getMessage());
+
+        } finally {
+            // 4. GỬI PHẢN HỒI CUỐI CÙNG CHO ORDER ORCHESTRATOR
+            if (response != null) {
+                orchestratorResponsePublisher.publishResponse(response, headers);
+            }
         }
     }
 
@@ -127,33 +181,25 @@ public class PaymentSaga {
 // ------------ Mở kakfa ------------------
 // docker exec -it kafka /bin/bash
 
-// ------------ reset dữ liệu kafka ------------
-// /usr/bin/kafka-consumer-groups \
-// --bootstrap-server kafka:9092 \
-// --group payment-service-group \
-// --topic payment.authorize.command \
-// --reset-offsets \
-// --to-latest \
-// --execute
 
-// ----------------- xem dữ liệu offset kakfa đã mới nhất -------------
+                            // ----------------- xem dữ liệu offset kakfa đã mới nhất ------------------- //
+// --------------------------------------------------------------> paymenr-service-group
 // /usr/bin/kafka-consumer-groups \
 // --bootstrap-server kafka:9092 \
 // --describe \
 // --group payment-service-group
 
-// --------------------- Đọc tin nhắn tại offset ---------------------
-// /usr/bin/kafka-console-consumer \
+// -----------------------------------------------------------------> order-service-group
+// /usr/bin/kafka-consumer-groups \
 // --bootstrap-server kafka:9092 \
-// --topic payment.authorize.command \
-// --offset 212 \
-// --partition 0 \
-// --max-messages 1 \
-// --property print.key=true
+// --describe \
+// --group order-service-group
 
-// order
 
-// ------------ reset kafka order -------------
+
+
+                            // ------------ -----reset kafka order -----------------------------------//
+// --------------------------------------------------------------------> orhestrator.payment-response
 // /usr/bin/kafka-consumer-groups \
 // --bootstrap-server kafka:9092 \
 // --group order-service-group \
@@ -162,7 +208,35 @@ public class PaymentSaga {
 // --to-latest \
 // --execute
 
+
+// --------------------------------------------------------------------------> order.saga.reply
 // /usr/bin/kafka-consumer-groups \
 // --bootstrap-server kafka:9092 \
-// --describe \
-// --group order-service-group
+// --group order-service-group \
+// --topic order.saga.reply \
+// --reset-offsets \
+// --to-latest \
+// --execute
+
+
+// ------------------------------------------------------------------------> payment.command
+// /usr/bin/kafka-consumer-groups \
+// --bootstrap-server kafka:9092 \
+// --group payment-service-group \
+// --topic payment.command \
+// --reset-offsets \
+// --to-latest \
+// --execute
+
+
+
+
+                            // ----------------- Lệnh lấy dữ liệu của offset tại vị ví ? của topic ??? ----------------
+// 
+// /usr/bin/kafka-console-consumer \
+// --bootstrap-server kafka:9092 \
+// --topic payment.command \
+// --offset 76072 \
+// --partition 0 \
+// --max-messages 1 \
+// --property print.key=true

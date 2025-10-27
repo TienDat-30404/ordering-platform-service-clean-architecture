@@ -34,6 +34,7 @@ import com.example.demo.application.ports.input.GetOrderHistoryUseCase;
 import com.example.demo.application.ports.input.OrderStatisticsUseCase;
 import com.example.demo.application.ports.input.RateOrderUseCase;
 import com.example.demo.application.ports.input.RemoveItemsUseCase;
+import com.example.demo.application.ports.output.OrderPublisher.OrderEventPublisher;
 import com.example.demo.domain.valueobject.order.OrderId;
 import com.example.demo.domain.valueobject.user.UserId;
 
@@ -159,4 +160,23 @@ public class OrderController {
     public String test() {
         return "Hello World 1234567777";
     }
+
+    @GetMapping("/test-kafka-publish") 
+    public ResponseEntity<String> testKafkaPublish() {
+        
+        // 1. Định nghĩa tham số test
+        String testTopic = "refund_payment";
+        String testKey = "TEST_MESSAGE_KEY";
+        
+        try {
+            publisher.testPublish(testTopic, testKey);
+            return new ResponseEntity<>("TEST Message sent to Kafka topic: " + testTopic, HttpStatus.OK);
+
+        } catch (Exception e) {
+            System.err.println("Lỗi khi chạy TEST Kafka: " + e.getMessage());
+            return new ResponseEntity<>("Failed to send TEST message to Kafka. Check logs.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
 }

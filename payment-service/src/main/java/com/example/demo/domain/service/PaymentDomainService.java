@@ -44,14 +44,14 @@ public class PaymentDomainService {
         }
     }
 
-    public void authorizePayment(Payment payment, String transactionId) {
-        if (payment.getStatus() != PaymentStatus.PENDING) {
-            throw new IllegalStateException("Can only authorize pending payments");
-        }
-        payment.setStatus(PaymentStatus.AUTHORIZED);
-        payment.setTransactionId(transactionId);
-        payment.setUpdatedAt(LocalDateTime.now());
-    }
+    // public void authorizePayment(Payment payment, String transactionId) {
+    //     if (payment.getStatus() != PaymentStatus.PENDING) {
+    //         throw new IllegalStateException("Can only authorize pending payments");
+    //     }
+    //     payment.setStatus(PaymentStatus.AUTHORIZED);
+    //     payment.setTransactionId(transactionId);
+    //     payment.setUpdatedAt(LocalDateTime.now());
+    // }
 
     public void failPayment(Payment payment, String reason) {
         payment.setStatus(PaymentStatus.FAILED);
@@ -67,12 +67,11 @@ public class PaymentDomainService {
         payment.setUpdatedAt(LocalDateTime.now());
     }
 
-    public void completeRefund(Payment payment, String refundTransactionId) {
-        if (payment.getStatus() != PaymentStatus.REFUND_REQUESTED) {
-            throw new IllegalStateException("Payment must be in refund requested state");
-        }
+    public void completeRefund(Payment payment) {
+        // if (payment.getStatus() != PaymentStatus.REFUND_REQUESTED) {
+        //     throw new IllegalStateException("Payment must be in refund requested state");
+        // }
         payment.setStatus(PaymentStatus.REFUND_COMPLETED);
-        payment.setTransactionId(refundTransactionId);
         payment.setUpdatedAt(LocalDateTime.now());
     }
 

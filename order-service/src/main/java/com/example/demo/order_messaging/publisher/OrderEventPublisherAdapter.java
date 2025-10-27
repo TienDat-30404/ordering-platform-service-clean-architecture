@@ -38,7 +38,7 @@ public class OrderEventPublisherAdapter implements OrderEventPublisher {
         int attempt = 0;
 
         // metrics holders (tag theo topic & eventType nếu có)
-        String eventType = headers != null ? headers.getOrDefault("eventType","UNKNOWN") : "UNKNOWN";
+        String eventType = headers != null ? headers.getOrDefault("eventType", "UNKNOWN") : "UNKNOWN";
         Counter pubSuccess = Counter.builder("order_publish_success_total")
                 .tag("topic", topic).tag("eventType", eventType).register(meter);
         Counter pubFailure = Counter.builder("order_publish_failure_total")
@@ -52,10 +52,12 @@ public class OrderEventPublisherAdapter implements OrderEventPublisher {
                 ProducerRecord<String, String> record = new ProducerRecord<>(topic, key, jsonPayload);
                 if (headers != null) {
                     headers.forEach((k, v) -> {
-                        if (v != null) record.headers().add(k, v.getBytes(StandardCharsets.UTF_8));
+                        if (v != null)
+                            record.headers().add(k, v.getBytes(StandardCharsets.UTF_8));
                     });
                 }
-                var result = kafkaTemplate.send(record).get(SEND_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS);
+                var result = kafkaTemplate.send(record).get(SEND_TIMEOUT_MS,
+                        java.util.concurrent.TimeUnit.MILLISECONDS);
                 var md = result.getRecordMetadata();
                 log.info("[KafkaPublisher] SENT OK topic={} partition={} offset={} key={} (attempt {}/{})",
                         md.topic(), md.partition(), md.offset(), key, attempt, MAX_ATTEMPTS);
@@ -68,9 +70,15 @@ public class OrderEventPublisherAdapter implements OrderEventPublisher {
                 log.warn("[KafkaPublisher] SEND FAILED attempt {}/{} topic={} key={} err={}",
                         attempt, MAX_ATTEMPTS, topic, key, ex.toString());
 
-                if (attempt == MAX_ATTEMPTS) break;
-                try { Thread.sleep(delay); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
-                delay = Math.min((long)(delay * BACKOFF_MULTIPLIER), MAX_DELAY_MS);
+                if (attempt == MAX_ATTEMPTS)
+                    break;
+                try {
+                    Thread.sleep(delay);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+                delay = Math.min((long) (delay * BACKOFF_MULTIPLIER), MAX_DELAY_MS);
             }
         }
 
@@ -79,5 +87,19 @@ public class OrderEventPublisherAdapter implements OrderEventPublisher {
         log.error("[KafkaPublisher] GIVE UP after {} attempts topic={} key={} lastErr={}",
                 MAX_ATTEMPTS, topic, key, last != null ? last.toString() : "n/a", last);
         throw new RuntimeException("Kafka publish failed after retries", last);
+    }
+
+    public void testPublish(String topic, String key) {
+        String testPayload = String.format(
+                "{\"eventType\": \"TEST_EVENT\", \"message\": \"Test Message from testPublish method!\", \"timestamp\": \"%s\"}",
+                java.time.Instant.now().toString());
+
+        // 2. Gửi message đến Kafka
+        // Vì kafkaTemplate<String, String>, nên bạn gửi string (JSON string)
+        kafkaTemplate.send(topic, key, testPayload);
+
+        // In ra console để xác nhận việc gửi đã được gọi
+        System.out.println("✅ TEST KAFKA GỬI THÀNH CÔNG!");
+        System.out.printf("   Topic: %s, Key: %s, Payload: %s%n", topic, key, testPayload);
     }
 }

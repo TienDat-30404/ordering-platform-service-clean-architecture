@@ -15,12 +15,14 @@ public class RefundRequestedEvent extends DomainEvent {
     private Long orderId;
     private BigDecimal amount;
     private String reason;
+    private Long userId;
 
-    public RefundRequestedEvent(Long paymentId, Long orderId, BigDecimal amount, String reason) {
+    public RefundRequestedEvent(Long paymentId, Long orderId, BigDecimal amount, String reason, Long userId) {
         super(orderId.toString(), "RefundRequested");
         this.paymentId = paymentId;
         this.orderId = orderId;
         this.amount = amount;
         this.reason = reason;
+        this.userId = userId;
     }
 }

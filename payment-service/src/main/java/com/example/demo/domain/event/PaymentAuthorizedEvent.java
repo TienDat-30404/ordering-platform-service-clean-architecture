@@ -1,6 +1,5 @@
 package com.example.demo.domain.event;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
