@@ -38,7 +38,7 @@ spring:
                 key-resolver: '#{@customerIdKeyResolver}'
                 redis-rate-limiter.replenishRate: 1      
                 redis-rate-limiter.burstCapacity: 60     
-                redis-rate-limiter.requestedTokens: 5
+                redis-rate-limiter.requestedTokens: 30
 
         - id: order-service
           uri: lb://order-service

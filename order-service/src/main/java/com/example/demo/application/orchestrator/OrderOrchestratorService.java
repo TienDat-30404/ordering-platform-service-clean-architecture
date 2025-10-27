@@ -300,7 +300,7 @@ public class OrderOrchestratorService {
     public void handlePaymentResponse(PaymentResponseData response, @Headers Map<String, Object> headers) {
         try {
 
-
+            System.out.println("//////////////////////////////////////" + headers);
             // 1. Trích xuất Metadata cần thiết từ Headers
             String sagaId = (String) headers.get("sagaId");
             String corrId = (String) headers.get("correlationId");
