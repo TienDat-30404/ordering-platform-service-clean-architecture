@@ -3,7 +3,6 @@ package com.example.demo.application.orchestrator;
 import com.example.demo.application.ports.output.repository.OrderRepositoryPort;
 import com.example.demo.application.ports.output.external.RestaurantDataProviderPort;
 import com.example.demo.application.dto.output.ProductDetailData;
-import com.example.common_dtos.enums.Topics;
 import com.example.demo.application.ports.input.UpdateOrderStatusUseCase;
 import com.example.common_dtos.enums.OrderStatus;
 import com.example.demo.application.dto.command.CreateOrderItemCommand;
@@ -136,7 +135,7 @@ public class OrderOrchestratorService {
                 callRestaurantStartPreparation(rec, orderId);
             }
             case "RESTAURANT_ITEMS_INVALID" -> {
-                // ✅ BỒI HOÀN HOLD
+                //BỒI HOÀN HOLD
                 callPaymentCancel(rec, orderId, "menu invalid");
                 updateOrderStatus.setStatus(orderId, OrderStatus.CANCELLING);
             }
@@ -150,8 +149,10 @@ public class OrderOrchestratorService {
             }
             case "RESTAURANT_COMPLETED" -> {
                 updateOrderStatus.setStatus(orderId, OrderStatus.COMPLETED);
+                callRestaurantDeductStock(rec, orderId);
                 confirmOrder(orderId);
             }
+
             default -> log.warn("[SAGA] Unknown eventType={} for orderId={}", event, orderId);
         }
 
@@ -262,17 +263,15 @@ public class OrderOrchestratorService {
     private void callRestaurantValidate(org.apache.kafka.clients.consumer.ConsumerRecord<String,String> rec, String orderId) {
         String sagaId = header(rec, "sagaId");
         try {
-            // ✅ ƯU TIÊN lấy từ cache tạm (tránh lỗi DB/Lazy)
             String restaurantId = pendingRestaurant.get(orderId);
             var itemsPayload = pendingItems.get(orderId);
 
-            // Fallback nếu cache rỗng → đọc DB (tùy)
             if (restaurantId == null) {
                 var order = orderRepository.findById(new com.example.demo.domain.valueobject.order.OrderId(Long.valueOf(orderId)));
-                restaurantId = String.valueOf(order.getRestaurantId());
+                restaurantId = String.valueOf(order.getRestaurantId().value());
             }
             if (itemsPayload == null || itemsPayload.isEmpty()) {
-                itemsPayload = buildItemsPayloadFromOrder(orderId); // giữ helper cũ làm dự phòng
+                itemsPayload = buildItemsPayloadFromOrder(orderId);
             }
 
             log.info("[SAGA] VALIDATE using restaurantId={} items={}", restaurantId, itemsPayload);
@@ -283,7 +282,8 @@ public class OrderOrchestratorService {
             env.put("restaurantId", restaurantId);
             env.put("payload", java.util.Map.of(
                     "restaurantId", restaurantId,
-                    "items", itemsPayload
+                    "items", itemsPayload,
+                    "checkStock", true
             ));
             env.put("timestamp", java.time.Instant.now().toString());
 
@@ -299,13 +299,13 @@ public class OrderOrchestratorService {
 
             log.info("[SAGA->RESTAURANT] VALIDATE_MENU_ITEMS topic={} key={} headers={} payload={}",
                     com.example.common_dtos.enums.Topics.RESTAURANT_VALIDATE_COMMAND, orderId, headers, json);
-            log.info("[DIAG] ENTER callRestaurantValidate sagaId={} orderId={}", sagaId, orderId);
-            log.info("[DIAG] VALIDATE using restaurantId={} items={}", restaurantId, itemsPayload);
+
             publisher.publish(com.example.common_dtos.enums.Topics.RESTAURANT_VALIDATE_COMMAND, orderId, json, headers);
         } catch (Throwable ex) {
             log.error("[SAGA] callRestaurantValidate failed for orderId={} err={}", orderId, ex.toString(), ex);
         }
     }
+
 
     private void clearPending(String orderId) {
         pendingItems.remove(orderId);
@@ -440,5 +440,40 @@ public class OrderOrchestratorService {
         return items;
     }
 
+    private void callRestaurantDeductStock(ConsumerRecord<String,String> rec, String orderId) {
+        String sagaId = header(rec, "sagaId");
+        try {
+            // lấy items từ cache; thiếu thì dựng lại từ DB
+            var itemsPayload = pendingItems.get(orderId);
+            if (itemsPayload == null || itemsPayload.isEmpty()) {
+                itemsPayload = buildItemsPayloadFromOrder(orderId);
+            }
+
+            var env = new LinkedHashMap<String, Object>();
+            env.put("eventType", "DEDUCT_STOCK");
+            env.put("orderId", orderId);
+            env.put("payload", Map.of("items", itemsPayload));
+            env.put("timestamp", Instant.now().toString());
+
+            String json = toJson(env);
+
+            Map<String, String> headers = Map.of(
+                    "sagaId", sagaId == null ? UUID.randomUUID().toString() : sagaId,
+                    "correlationId", UUID.randomUUID().toString(),
+                    "replyTo", Topics.ORDER_SAGA_REPLY,
+                    "eventType", "DEDUCT_STOCK"
+            );
+
+            log.info("[SAGA->RESTAURANT] DEDUCT_STOCK topic={} key={} headers={} payload={}",
+                    Topics.RESTAURANT_FULFILL_COMMAND, orderId, headers, json);
+
+            publisher.publish(Topics.RESTAURANT_FULFILL_COMMAND, orderId, json, headers);
+
+            // sau khi deduct thì có thể clear cache tạm
+            clearPending(orderId);
+        } catch (Throwable ex) {
+            log.error("[SAGA] callRestaurantDeductStock failed for orderId={} err={}", orderId, ex.toString(), ex);
+        }
+    }
 
 }
