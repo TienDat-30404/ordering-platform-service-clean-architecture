@@ -91,7 +91,7 @@ public class OrchestratorResponsePublisher {
                     .setHeader(KafkaHeaders.TOPIC, replyToTopic) // Đặt Topic phản hồi
                     .setHeader(KafkaHeaders.KEY, response.orderId().toString()) // Dùng orderId làm Key
                     .build();
-
+            System.out.println("messssssssssssssssssssage"+ message);
             kafkaTemplate.send(message);
             log.info("[ORCH PUB] Response sent to topic: {} with SagaId: {}", response.status(), sagaHeaders.get("sagaId"));
 

@@ -103,9 +103,8 @@ public class PaymentSaga {
 
             // return;
         } finally {
-            System.out.println("publicResponseeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
             if (response != null) {
-                System.out.println("responseeeeeeeeeeeeeeeeeeee" + response);
+                System.out.println("responseeeeeeeeeeeeeeeeeeee" + response.status());
                 System.out.println("headerrrrrrrrrrrrrrrrrrrs" + headers);
                 orchestratorResponsePublisher.publishResponse(response, headers);
             }

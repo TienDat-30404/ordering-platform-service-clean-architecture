@@ -303,10 +303,10 @@ public class OrderOrchestratorService {
 
             System.out.println("//////////////////////////////////////" + headers);
             // 1. Trích xuất Metadata cần thiết từ Headers
-            String sagaId = (String) headers.get("sagaId");
-            String corrId = (String) headers.get("correlationId");
-            // UserId trong header là String, cần chuyển sang Long nếu DTO yêu cầu
-            Long userId = Long.valueOf((String) headers.get("userId"));
+            // String sagaId = (String) headers.get("sagaId");
+            // String corrId = (String) headers.get("correlationId");
+            // // UserId trong header là String, cần chuyển sang Long nếu DTO yêu cầu
+            // Long userId = Long.valueOf((String) headers.get("userId"));
 
             OrderId orderId = new OrderId(response.orderId());
             switch (response.status()) {
@@ -314,7 +314,7 @@ public class OrderOrchestratorService {
                     System.out.println("1111111111111111111111111111111111111111111111111111111111");
                     log.info("[SAGA] Payment success for order {}. Proceeding to Inventory/Confirmation.", orderId);
                     confirmOrderPaid(orderId); // Bỏ comment và gọi hàm
-                    
+
                     break;
                 case "FAILED":
                     System.out.println("2222222222222222222222222222222222222222222222222222222222222222222");
@@ -335,7 +335,7 @@ public class OrderOrchestratorService {
             log.error("Lỗi chuyển đổi Order ID từ {} thành số. Bỏ qua tin nhắn.", response.orderId(), e);
             return;
         } catch (Exception e) {
-            // log.error("Lỗi hệ thống khi xử lý phản hồi thanh toán cho order {}. Đang thử lại.", response.orderId(), e);
+            log.error("Lỗi hệ thống khi xử lý phản hồi thanh toán cho order {}. Đang thử lại.", response.orderId(), e);
             return;
         }
 
