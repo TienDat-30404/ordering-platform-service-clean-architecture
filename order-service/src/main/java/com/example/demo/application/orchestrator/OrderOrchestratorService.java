@@ -285,7 +285,7 @@ public class OrderOrchestratorService {
 
         // 🛑 3. Gửi lệnh đến Topic của Payment Service
         log.info("[SAGA->PAYMENT] topic={} key={} headers={} payload={}",
-                "payment.authorize.command", orderIdStr, headers, json);
+                "payment.command", orderIdStr, headers, json);
 
         try {
             // Sử dụng orderIdStr (String) làm Kafka Key

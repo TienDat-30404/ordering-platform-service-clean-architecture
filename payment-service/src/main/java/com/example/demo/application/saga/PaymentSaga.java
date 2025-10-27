@@ -44,6 +44,7 @@ public class PaymentSaga {
     public void handleAuthorizePaymentCommand(@Payload AuthorizePaymentCommandData event,
             @Headers Map<String, Object> headers) {
         System.out.println("headddddddddddddddddddddddđ" + headers);
+        System.out.println("232kkkkkkkkkkkkkkkkkkkkkk" + event.getAmount());
         PaymentResponseData response = null;
         byte[] eventTypeBytes = (byte[]) headers.get("eventType");
         String eventType = new String(eventTypeBytes, StandardCharsets.UTF_8);
@@ -65,6 +66,7 @@ public class PaymentSaga {
                             event.getOrderId(), event.getUserId(), event.getAmount(), payment.getPaymentId());
 
                     response = paymentApplicationService.authorizePayment(command);
+                    System.out.println("vvvvvvvvvvvvvvvvvvvvvv" + response);
                     break;
                 case "CANCEL_PAYMENT":
                     log.info("[CANCEL] Received CANCEL_PAYMENT command for order: {}", event.getOrderId());
@@ -223,7 +225,7 @@ public class PaymentSaga {
 // /usr/bin/kafka-consumer-groups \
 // --bootstrap-server kafka:9092 \
 // --group payment-service-group \
-// --topic payment.command \
+// --topic payment.authorize.command \
 // --reset-offsets \
 // --to-latest \
 // --execute

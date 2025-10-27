@@ -3,6 +3,8 @@ package com.example.demo.infrastructure.publisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -47,28 +49,51 @@ public class OrchestratorResponsePublisher {
         log.info("[ORCH PUB] Publishing Payment response for order {} to Orchestrator. Status: {}",
                 response.orderId(), response.status());
 
-        System.out.println("rêcvierHearrrrrrrrrrrrrrrrrrrrrrrrrrrr" + receivedHeaders);
-        Map<String, Object> headersToSend = receivedHeaders.entrySet().stream()
-                // Loại bỏ các Header Kafka nội bộ không cần thiết
-                .filter(e -> !e.getKey().startsWith("kafka_") && e.getValue() != null)
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> e.getValue() instanceof byte[] ? new String((byte[]) e.getValue()) : e.getValue()));
+        // 1. TẠO MAP CHỈ CHỨA CÁC HEADER SAGA CẦN THIẾT
+        Map<String, String> sagaHeaders = new HashMap<>();
 
-        String replyToTopic = (String) headersToSend.getOrDefault("replyTo", ORCHESTRATOR_PAYMENT_RESPONSE_TOPIC);
-        System.out.println("replyToTOpiccccccccccccccccccccccccc" + replyToTopic);
-        headersToSend.put("eventType", response.status());
-        headersToSend.put("source", "payment-service");
-        System.out.println("kafkaHeadersTopiccccccccccccccccccccccccc" + KafkaHeaders.TOPIC);
-        // --- 2. TẠO VÀ GỬI MESSAGE VỚI HEADERS ---
+        // Lấy Topic phản hồi (ReplyTo)
+        String replyToTopic = ORCHESTRATOR_PAYMENT_RESPONSE_TOPIC; // Mặc định
+
+        // Khôi phục các Saga Headers cốt lõi từ Headers đã nhận (Chuyển byte[] thành
+        // String)
+        for (Map.Entry<String, Object> entry : receivedHeaders.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+
+            // Chỉ quan tâm đến các Headers được Service khởi tạo (Orchestrator) gửi đến
+            if (key.equals("sagaId") || key.equals("correlationId") || key.equals("replyTo")) {
+                if (value instanceof byte[]) {
+                    String strValue = new String((byte[]) value, StandardCharsets.UTF_8);
+                    sagaHeaders.put(key, strValue);
+                    if (key.equals("replyTo")) {
+                        replyToTopic = strValue;
+                    }
+                } else if (value instanceof String) {
+                    sagaHeaders.put(key, (String) value);
+                    if (key.equals("replyTo")) {
+                        replyToTopic = (String) value;
+                    }
+                }
+            }
+        }
+
+        // 2. CẬP NHẬT CÁC HEADER PHẢN HỒI
+        // Thêm trạng thái Saga mới (quan trọng nhất)
+        sagaHeaders.put("eventType", response.status());
+        // Thêm nguồn gốc của phản hồi
+        sagaHeaders.put("source", "payment-service");
+
+        // --- 3. GỬI MESSAGE ---
         try {
             Message<PaymentResponseData> message = MessageBuilder.withPayload(response)
-                    .copyHeaders(headersToSend) // Gắn tất cả headers đã cập nhật
+                    .copyHeaders(sagaHeaders) // Gắn chỉ các headers Saga đã chuẩn hóa
                     .setHeader(KafkaHeaders.TOPIC, replyToTopic) // Đặt Topic phản hồi
                     .setHeader(KafkaHeaders.KEY, response.orderId().toString()) // Dùng orderId làm Key
                     .build();
-            System.out.println("messsssssssssss2222222ssssage" + message);
+
             kafkaTemplate.send(message);
+            log.info("[ORCH PUB] Response sent to topic: {} with SagaId: {}", response.status(), sagaHeaders.get("sagaId"));
 
         } catch (Exception e) {
             log.error("[ORCH PUB] Error sending PaymentResponse for order: {}", response.orderId(), e);
