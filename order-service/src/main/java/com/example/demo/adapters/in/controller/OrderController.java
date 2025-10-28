@@ -73,9 +73,9 @@ public class OrderController {
         TrackOrderResponse res = createOrderUseCase.createOrder(command, userId); // lưu PENDING
 
         // orchestratorService.startCreateOrderSagaFromCommand(
-        //         res.getId().toString(),
-        //         res.getRestaurantId(),
-        //         command.getItems());
+        // res.getId().toString(),
+        // res.getRestaurantId(),
+        // command.getItems());
 
         return ResponseEntity.ok(res);
     }
@@ -154,29 +154,29 @@ public class OrderController {
         rateOrderUseCase.rateOrder(command, new UserId(userId));
 
         return ResponseEntity.status(HttpStatus.CREATED).build(); // 201 Created
-    }   
+    }
 
     @GetMapping("/test")
     public String test() {
-        return "Hello World 1234567777";
+        return "Hello World 12345";
     }
 
-    @GetMapping("/test-kafka-publish") 
+    @GetMapping("/test-kafka-publish")
     public ResponseEntity<String> testKafkaPublish() {
-        
+
         // 1. Định nghĩa tham số test
         String testTopic = "refund_payment";
         String testKey = "TEST_MESSAGE_KEY";
-        
+
         try {
             publisher.testPublish(testTopic, testKey);
             return new ResponseEntity<>("TEST Message sent to Kafka topic: " + testTopic, HttpStatus.OK);
 
         } catch (Exception e) {
             System.err.println("Lỗi khi chạy TEST Kafka: " + e.getMessage());
-            return new ResponseEntity<>("Failed to send TEST message to Kafka. Check logs.", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Failed to send TEST message to Kafka. Check logs.",
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 
 }

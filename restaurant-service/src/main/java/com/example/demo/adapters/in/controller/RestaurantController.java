@@ -2,7 +2,6 @@ package com.example.demo.adapters.in.controller;
 
 import java.util.List;
 
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -50,7 +49,7 @@ public class RestaurantController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/test1111")
+    @GetMapping("/test2")
     public String test() {
         return "Restaurant Service is up and running!";
     }
@@ -104,15 +103,22 @@ public class RestaurantController {
     }
 
     @PostMapping("/stock/check")
-    public ResponseEntity<List<com.example.demo.application.dto.stock.StockCheckResult>>
-    checkStock(@RequestBody List<com.example.demo.application.dto.stock.StockCheckItem> items) {
+    public ResponseEntity<List<com.example.demo.application.dto.stock.StockCheckResult>> checkStock(
+            @RequestBody List<com.example.demo.application.dto.stock.StockCheckItem> items) {
         var result = checkStockUseCase.check(items);
         return ResponseEntity.ok(result);
     }
 
     @PostMapping("/stock/deduct")
-    public ResponseEntity<Void> deductStock(@RequestBody List<com.example.demo.application.dto.stock.StockCheckItem> items) {
+    public ResponseEntity<Void> deductStock(
+            @RequestBody List<com.example.demo.application.dto.stock.StockCheckItem> items) {
         deductStockUseCase.deduct(items);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/test123")
+    public String test3() {
+        return "Hello World ";
+    }
+
 }

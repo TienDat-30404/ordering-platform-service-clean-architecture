@@ -1,40 +1,36 @@
-# STAGE 1: BUILD với Maven
-# Sử dụng Base Image Temurin đã được vá lỗi
-FROM maven:3.9-eclipse-temurin-21-alpine AS builder
-WORKDIR /app
+# GIAI ĐOẠN 1: BUILDER
+FROM maven:3.9-eclipse-temurin-21 AS builder 
 
-# Copy parent POM
-COPY pom.xml /app/
+WORKDIR /build
 
-# Xóa module restaurant-service nếu chưa sẵn sàng
-RUN sed -i '/<module>order-service<\/module>/d' pom.xml || true
+# 1. COPY file pom.xml gốc
+COPY pom.xml ./
 
-# Copy module POMs
-COPY common-dtos/pom.xml /app/common-dtos/
-COPY restaurant-service/pom.xml /app/restaurant-service/
+COPY restaurant-service ./restaurant-service
+COPY common-dtos ./common-dtos 
 
-# Copy source code
-COPY common-dtos/src /app/common-dtos/src
-COPY restaurant-service/src /app/restaurant-service/src
-
-# --- BƯỚC SỬA LỖI DEPENDENCY RESOLUTION ---
-
-# 1. BUILD VÀ INSTALL CÁC MODULE PHỤ THUỘC (common-dtos) TRƯỚC
-# Lệnh này đảm bảo common-dtos được đóng gói và đặt vào .m2 repository
-RUN mvn clean install -pl common-dtos -am -DskipTests
-
-# 2. BUILD MODULE CHÍNH (order-service)
-# common-dtos đã có sẵn trong .m2 repo cục bộ, nên lỗi "Could not find artifact" sẽ được giải quyết.
-RUN mvn clean install -pl restaurant-service -DskipTests
-
+RUN sed -i '/<module>api-gateway<\/module>/d' pom.xml && \
+    sed -i '/<module>user-service<\/module>/d' pom.xml && \
+    sed -i '/<module>order-service<\/module>/d' pom.xml && \
+    sed -i '/<module>payment-service<\/module>/d' pom.xml && \
+    mvn clean install -DskipTests -B -pl restaurant-service -am
 # ----------------------------------------------------
-# STAGE 2: RUNTIME (chỉ JRE)
-# ----------------------------------------------------
-FROM eclipse-temurin:21-jre-alpine
-WORKDIR /app
 
-# Copy JAR từ stage builder
-COPY --from=builder /app/restaurant-service/target/*.jar app.jar
+# GIAI ĐOẠN 2: RUNTIME
+FROM maven:3.9-eclipse-temurin-21
 
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+WORKDIR /build
+
+# <CHANGE> Copy source code và dependencies từ builder
+COPY --from=builder /build /build
+COPY --from=builder /root/.m2 /root/.m2
+
+EXPOSE 8081
+
+# <CHANGE> Chạy với mvn spring-boot:run để hỗ trợ hot reload
+ENV MAVEN_OPTS="-Dspring-boot.run.fork=false"
+WORKDIR /build/restaurant-service
+CMD ["mvn", "spring-boot:run"]
+
+
+

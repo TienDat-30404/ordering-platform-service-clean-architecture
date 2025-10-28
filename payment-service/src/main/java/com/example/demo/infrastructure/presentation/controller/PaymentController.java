@@ -54,8 +54,8 @@ public class PaymentController {
        }
    }
 
-   @GetMapping("/health")
+   @GetMapping("/health11")
    public ResponseEntity<String> health() {
-       return ResponseEntity.ok("Payment Service is running 11111");
+       return ResponseEntity.ok("Payment Service is running ");
    }
 }
