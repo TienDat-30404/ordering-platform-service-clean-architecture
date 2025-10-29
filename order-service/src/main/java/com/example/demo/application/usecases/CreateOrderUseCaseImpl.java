@@ -93,10 +93,12 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
 
                 BigDecimal totalAmountToPay = new BigDecimal("1000000.00");
 
+                List<Map<String, Object>> itemsPayload = orderMapper.toItemsPayload(savedOrder.getItems());
                 orderOrchestratorService.startCreateOrderSaga(
-                                savedOrder.getId().value(),
-                                totalAmountToPay,
-                                savedOrder.getUserId().value());
+                        savedOrder.getId().value().toString(),
+                        savedOrder.getRestaurantId().value().toString(),
+                        itemsPayload
+                );
 
                 // 6. Trả về Response
                 TrackOrderResponse response = orderMapper.toOrderDTO(savedOrder);

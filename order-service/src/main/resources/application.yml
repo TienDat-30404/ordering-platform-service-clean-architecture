@@ -1,5 +1,4 @@
 spring:
-
   application:
     name: order-service
   order:
@@ -10,12 +9,11 @@ spring:
       group: order-service-group
 
   kafka:
-    bootstrap-servers: kafka:9092   # tên service trong docker-compose
-    # bootstrap-servers: localhost:9092   # tên service trong docker-compose
+    bootstrap-servers: kafka:9092
 
     producer:
       acks: all
-      retries: 3                       # app đã tự retry
+      retries: 3
       delivery-timeout-ms: 120000
       request-timeout-ms: 30000
       properties:
@@ -28,38 +26,32 @@ spring:
       group-id: order-service-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      # value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "*"
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties: { }   # <-- đảm bảo không còn spring.json.*
 
   datasource:
-    # url: jdbc:postgresql://localhost:5432/order_saervice_clean_architecture
     url: jdbc:postgresql://order-db:5432/order_service_clean_architecture
-
     username: postgres
     password:
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: update        # create, create-drop, update, none
-    show-sql: true            # log SQL ra console
+      ddl-auto: update
+    show-sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
-      hibernate.format_sql: true  # format SQL dễ đọc hơn
+      hibernate.format_sql: true
 
 server:
   port: 8080
 
 restaurant-service:
-  # GIẢ ĐỊNH: Dịch vụ Nhà hàng đang chạy trên localhost:8081
   url: http://localhost:8081
 
 eureka:
   client:
     service-url:
-      # defaultZone: http://localhost:8761/eureka/
       defaultZone: http://discovery-server:8761/eureka/
     register-with-eureka: true
     fetch-registry: true

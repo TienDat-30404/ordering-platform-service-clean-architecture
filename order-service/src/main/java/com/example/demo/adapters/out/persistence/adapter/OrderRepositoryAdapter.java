@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.example.common_dtos.enums.OrderStatus;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Repository;
 
 import com.example.demo.adapters.out.persistence.dto.OrderStatisticsJpaProjection;
@@ -60,13 +60,16 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
 
     }
 
+    @Override
+    @Transactional(readOnly = true) // đảm bảo session còn mở khi map
     public Order findById(OrderId id) {
         Long orderId = id.value();
-        return orderJpaRepository.findById(orderId)
+        return orderJpaRepository.findWithItemsById(orderId)
                 .map(orderPersistenceMapper::toDomainEntity)
                 .orElseThrow(() -> new Order.OrderDomainException(
                         "Order with ID " + orderId + " not found."));
     }
+
 
     public List<Order> findByUserId(UserId userId) {
         Long rawUserId = userId.value();

@@ -1,53 +1,43 @@
 package com.example.common_dtos.enums;
 
 /**
- * Trạng thái giao dịch thanh toán tại Payment Service.
- * Dùng chung cho toàn hệ thống (chia sẻ qua common_dtos).
+ * Trạng thái giao dịch thanh toán dùng chung cho toàn hệ thống.
+ * Dùng giữa Order / Payment / Orchestrator qua common_dtos.
  *
- * Mỗi trạng thái mapping trực tiếp với SagaStatus:
- * STARTED → PENDING → AUTHORIZED / FAILED → REFUNDED / CANCELED
+ * Flow:
+ * STARTED → PENDING
+ * PENDING → AUTHORIZED / FAILED
+ * AUTHORIZED → REFUND_REQUESTED → REFUND_COMPLETED / CANCELED
  */
 public enum PaymentStatus {
 
-    /**
-     * Giao dịch vừa khởi tạo, chưa xử lý.
-     * (SagaStatus.STARTED)
-     */
+    /** Giao dịch vừa khởi tạo, chưa xử lý. */
     PENDING,
 
-    /**
-     * Thanh toán được chấp thuận (đã authorize).
-     * (SagaStatus.PAYMENT_AUTHORIZED)
-     */
+    /** Thanh toán đã authorize/hold thành công. */
     AUTHORIZED,
 
-    /**
-     * Thanh toán bị từ chối (ví dụ: vượt hạn mức, lỗi cổng thanh toán, v.v.)
-     * (SagaStatus.PAYMENT_FAILED)
-     */
+    /** Thanh toán thất bại (lỗi gateway, vượt hạn mức, v.v.). */
     FAILED,
 
-    /**
-     * Giao dịch đã hoàn tiền (refund).
-     * (SagaStatus.COMPENSATED)
-     */
-    REFUNDED,
+    /** Đã tạo yêu cầu hoàn tiền/huỷ hold, đang chờ xử lý. */
+    REFUND_REQUESTED,
 
-    /**
-     * Giao dịch bị hủy thủ công hoặc rollback toàn bộ saga.
-     * (SagaStatus.CANCELLED)
-     */
+    /** Hoàn tiền/huỷ hold đã xử lý xong. */
+    REFUND_COMPLETED,
+
+    /** Hủy thủ công hoặc rollback toàn bộ saga. */
     CANCELED;
 
-    /** Xác định xem giao dịch đã ở trạng thái kết thúc. */
+    /** Giao dịch đã kết thúc vòng đời? */
     public boolean isTerminal() {
         return switch (this) {
-            case FAILED, REFUNDED, CANCELED -> true;
+            case FAILED, REFUND_COMPLETED, CANCELED -> true;
             default -> false;
         };
     }
 
-    /** Xác định xem giao dịch là lỗi / rollback. */
+    /** Giao dịch kết thúc do lỗi/rollback? */
     public boolean isFailure() {
         return this == FAILED || this == CANCELED;
     }
