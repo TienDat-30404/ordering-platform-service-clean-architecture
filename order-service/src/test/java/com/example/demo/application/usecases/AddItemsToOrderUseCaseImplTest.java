@@ -8,11 +8,13 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
 import java.util.List;
 
 import com.example.common_dtos.dto.ItemValidationResponse;
 import com.example.demo.application.dto.command.AddItemsCommand;
+import com.example.demo.application.dto.command.CreateOrderItemCommand;
 import com.example.demo.application.dto.output.TrackOrderResponse;
 import com.example.demo.application.mapper.OrderMapper;
 import com.example.demo.application.ports.output.external.RestaurantDataProviderPort;
@@ -78,10 +80,9 @@ class AddItemsToOrderUseCaseImplTest {
 @Test
 void addItems_successfulAddsAndReturnsDto() {
         // Mô tả test: kiểm tra kịch bản thành công khi thêm item vào đơn hàng
-        AddItemsCommand command = org.mockito.Mockito.mock(AddItemsCommand.class);
+        AddItemsCommand command = mock(AddItemsCommand.class);
         // Use the real CreateOrderItemCommand type to avoid ClassCastException at runtime
-        com.example.demo.application.dto.command.CreateOrderItemCommand newItem =
-                org.mockito.Mockito.mock(com.example.demo.application.dto.command.CreateOrderItemCommand.class);
+        CreateOrderItemCommand newItem = mock(CreateOrderItemCommand.class);
         when(newItem.getProductId()).thenReturn(101L);
         when(newItem.getQuantity()).thenReturn(2);
 
@@ -89,20 +90,20 @@ void addItems_successfulAddsAndReturnsDto() {
         when(command.getNewItems()).thenReturn((List) List.of(newItem));
 
         // Giả lập kiểm tra quyền: có order tồn tại thuộc user
-        Order existingOrder = org.mockito.Mockito.mock(Order.class);
+        Order existingOrder = mock(Order.class);
         when(orderRepositoryPort.findByIdAndUserId(any(), any())).thenReturn(existingOrder);
 
         // Lấy thông tin order thực tế để đọc restaurantId
-        Order order = org.mockito.Mockito.mock(Order.class);
+        Order order = mock(Order.class);
         when(orderRepositoryPort.findById(any())).thenReturn(order);
 
         // Giả lập restaurantId trả về từ order
-        RestaurantId restId = org.mockito.Mockito.mock(RestaurantId.class);
+        RestaurantId restId = mock(RestaurantId.class);
         when(order.getRestaurantId()).thenReturn(restId);
         when(restId.value()).thenReturn(55L);
 
         // Giả lập response từ service bên ngoài trả về thông tin menu item và giá
-        ItemValidationResponse ivr = org.mockito.Mockito.mock(ItemValidationResponse.class);
+        ItemValidationResponse ivr = mock(ItemValidationResponse.class);
         when(ivr.getMenuItemId()).thenReturn(101L);
         when(ivr.getPrice()).thenReturn(java.math.BigDecimal.valueOf(10.5));
 
@@ -111,10 +112,10 @@ void addItems_successfulAddsAndReturnsDto() {
                 .thenReturn((List) List.of(ivr));
 
         // Giả lập lưu order và mapping sang DTO
-        Order savedOrder = org.mockito.Mockito.mock(Order.class);
+        Order savedOrder = mock(Order.class);
         when(orderRepositoryPort.save(order)).thenReturn(savedOrder);
 
-        TrackOrderResponse dto = org.mockito.Mockito.mock(TrackOrderResponse.class);
+        TrackOrderResponse dto = mock(TrackOrderResponse.class);
         when(orderMapper.toOrderDTO(savedOrder)).thenReturn(dto);
 
         // Thực thi use case
@@ -132,7 +133,7 @@ void addItems_successfulAddsAndReturnsDto() {
 @Test
 void addItems_whenUserHasNoPermission_throwsDomainException() {
         // Chuẩn bị command và mô phỏng rằng user không có quyền truy cập order
-        AddItemsCommand command = org.mockito.Mockito.mock(AddItemsCommand.class);
+        AddItemsCommand command = mock(AddItemsCommand.class);
         when(command.getOrderId()).thenReturn(orderId);
         // findByIdAndUserId trả về null => không tìm thấy order thuộc về user => không có quyền
         when(orderRepositoryPort.findByIdAndUserId(any(), any())).thenReturn(null);
@@ -144,10 +145,9 @@ void addItems_whenUserHasNoPermission_throwsDomainException() {
 @Test
 void addItems_whenVerifiedItemMissingInCommand_throwsDomainException() {
         // Tạo command chứa item có productId 300
-        AddItemsCommand command = org.mockito.Mockito.mock(AddItemsCommand.class);
+        AddItemsCommand command = mock(AddItemsCommand.class);
         // Use the real CreateOrderItemCommand type so there's no ClassCastException
-        com.example.demo.application.dto.command.CreateOrderItemCommand cmdItem =
-                org.mockito.Mockito.mock(com.example.demo.application.dto.command.CreateOrderItemCommand.class);
+        CreateOrderItemCommand cmdItem = mock(CreateOrderItemCommand.class);
 
         when(cmdItem.getProductId()).thenReturn(300L);
         when(cmdItem.getQuantity()).thenReturn(1);
@@ -156,20 +156,20 @@ void addItems_whenVerifiedItemMissingInCommand_throwsDomainException() {
         when(command.getNewItems()).thenReturn((List) List.of(cmdItem));
 
         // Giả lập kiểm tra quyền: order tồn tại nhưng thuộc user
-        Order existingOrder = org.mockito.Mockito.mock(Order.class);
+        Order existingOrder = mock(Order.class);
         when(orderRepositoryPort.findByIdAndUserId(any(), any())).thenReturn(existingOrder);
 
         // Lấy order thực tế để đọc restaurantId
-        Order order = org.mockito.Mockito.mock(Order.class);
+        Order order = mock(Order.class);
         when(orderRepositoryPort.findById(any())).thenReturn(order);
 
         // Giả lập restaurantId của order
-        RestaurantId restId = org.mockito.Mockito.mock(RestaurantId.class);
+        RestaurantId restId = mock(RestaurantId.class);
         when(order.getRestaurantId()).thenReturn(restId);
         when(restId.value()).thenReturn(55L);
 
         // External service trả về danh sách verified items chỉ chứa menuItemId = 400
-        ItemValidationResponse ivr = org.mockito.Mockito.mock(ItemValidationResponse.class);
+        ItemValidationResponse ivr = mock(ItemValidationResponse.class);
         when(ivr.getMenuItemId()).thenReturn(400L); // không có trong command -> thiếu quantity tương ứng
         lenient().when(ivr.getPrice()).thenReturn(java.math.BigDecimal.valueOf(5.0));
 
@@ -184,10 +184,9 @@ void addItems_whenVerifiedItemMissingInCommand_throwsDomainException() {
 @Test
 void addItems_whenQuantityInvalidZero_throwsDomainException() {
         // Tạo command chứa item với quantity không hợp lệ (0)
-        AddItemsCommand command = org.mockito.Mockito.mock(AddItemsCommand.class);
+        AddItemsCommand command = mock(AddItemsCommand.class);
         // Use CreateOrderItemCommand mock to avoid ClassCastException
-        com.example.demo.application.dto.command.CreateOrderItemCommand cmdItem =
-                org.mockito.Mockito.mock(com.example.demo.application.dto.command.CreateOrderItemCommand.class);
+        CreateOrderItemCommand cmdItem = mock(CreateOrderItemCommand.class);
         when(cmdItem.getProductId()).thenReturn(101L);
         when(cmdItem.getQuantity()).thenReturn(0); // số lượng bằng 0 là không hợp lệ
 
@@ -195,19 +194,19 @@ void addItems_whenQuantityInvalidZero_throwsDomainException() {
         when(command.getNewItems()).thenReturn((List) List.of(cmdItem));
 
         // Giả lập kiểm tra quyền: order tồn tại cho user
-        Order existingOrder = org.mockito.Mockito.mock(Order.class);
+        Order existingOrder = mock(Order.class);
         when(orderRepositoryPort.findByIdAndUserId(any(), any())).thenReturn(existingOrder);
 
         // Lấy order để truy xuất restaurantId
-        Order order = org.mockito.Mockito.mock(Order.class);
+        Order order = mock(Order.class);
         when(orderRepositoryPort.findById(any())).thenReturn(order);
 
         // Giả lập restaurantId và giá của item từ dịch vụ external
-        RestaurantId restId = org.mockito.Mockito.mock(RestaurantId.class);
+        RestaurantId restId = mock(RestaurantId.class);
         when(order.getRestaurantId()).thenReturn(restId);
         when(restId.value()).thenReturn(55L);
 
-        ItemValidationResponse ivr = org.mockito.Mockito.mock(ItemValidationResponse.class);
+        ItemValidationResponse ivr = mock(ItemValidationResponse.class);
         when(ivr.getMenuItemId()).thenReturn(101L);
         lenient().when(ivr.getPrice()).thenReturn(java.math.BigDecimal.valueOf(7.0));
 

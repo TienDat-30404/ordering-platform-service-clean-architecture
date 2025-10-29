@@ -77,7 +77,7 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
                                 new UserId(userId),
                                 finalOrderItems,
                                 new RestaurantId(command.getRestaurantId()));
-
+                System.out.println("**************Created userID in Order: " + order.getUserId());
                 // 5. Lưu Order Aggregate
                 // Order savedOrder = orderRepositoryPort.save(order);
 
@@ -90,7 +90,7 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
                 // );
 
                 Order savedOrder = orderRepositoryPort.save(order);
-
+                                System.out.println("**************Saved userID in Order: " + savedOrder.getUserId());
                 BigDecimal totalAmountToPay = new BigDecimal("1000000.00");
 
                 orderOrchestratorService.startCreateOrderSaga(
