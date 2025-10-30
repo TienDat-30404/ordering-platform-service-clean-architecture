@@ -6,7 +6,6 @@ import static org.mockito.Mockito.*;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 import com.example.common_dtos.dto.ItemValidationResponse;
 import com.example.demo.application.dto.command.CreateOrderCommand;
@@ -17,11 +16,7 @@ import com.example.demo.application.mapper.OrderMapper;
 import com.example.demo.application.ports.output.external.RestaurantDataProviderPort;
 import com.example.demo.application.ports.output.repository.OrderRepositoryPort;
 import com.example.demo.domain.entity.Order;
-import com.example.demo.domain.entity.OrderItem;
 import com.example.demo.domain.valueobject.order.OrderId;
-import com.example.demo.domain.valueobject.order.RestaurantId;
-import com.example.demo.domain.valueobject.product.ProductId;
-import com.example.demo.domain.valueobject.user.UserId;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
