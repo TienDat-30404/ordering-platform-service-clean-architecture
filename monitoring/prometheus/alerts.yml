@@ -1,5 +1,16 @@
 groups:
-  - name: order-service.rules
+  - name: services.health
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{$labels.job}} is down"
+          description: "Prometheus target down for job {{$labels.job}} on instance {{$labels.instance}}"
+
+  - name: order.kafka
     rules:
       - alert: OrderPublishFailuresHigh
         expr: increase(order_publish_failure_total[5m]) > 5
@@ -9,3 +20,23 @@ groups:
         annotations:
           summary: "Kafka publish failures high on order-service"
           description: "More than 5 publish failures in 5 minutes (topic={{ $labels.topic }}, eventType={{ $labels.eventType }})"
+
+  - name: payment.flow
+    rules:
+      - alert: PaymentFailedSpike
+        expr: increase(payment_authorize_fail_total[5m]) > 3
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Payment authorize failures are spiking"
+          description: "Increase in authorize failures for payment-service"
+
+      - alert: RefundErrors
+        expr: increase(payment_refund_fail_total[10m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Refund errors occurred"
+          description: "Check refund pipeline for payment-service"

@@ -89,7 +89,7 @@ public class OrderOrchestratorService {
         String sagaId = UUID.randomUUID().toString();
         String corrId = UUID.randomUUID().toString();
 
-        // ✅ TÍNH SỐ TIỀN TẠM TÍNH ĐỂ HOLD
+
         var amount = quoteTotal(restaurantId, itemsPayload);
 
         var env = SagaEnvelope.builder()
@@ -428,7 +428,7 @@ public class OrderOrchestratorService {
                 .map(m -> Long.valueOf(String.valueOf(m.get("productId"))))
                 .toList();
 
-        // ✅ gọi port đã implement
+
         java.util.List<ProductDetailData> details =
                 restaurantData.getProducts(Long.valueOf(restaurantId), ids);
 
@@ -662,3 +662,4 @@ public class OrderOrchestratorService {
         return null; // không có cũng OK, payment-service đã có find-or-create
     }
 }
+
