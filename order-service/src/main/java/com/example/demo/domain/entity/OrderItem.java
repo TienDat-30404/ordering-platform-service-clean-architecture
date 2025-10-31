@@ -27,6 +27,11 @@ public class OrderItem {
     }
 
     public static OrderItem createNew(ProductId productId, int quantity, BigDecimal price) {
+        if (quantity <= 0) {
+            throw new Order.OrderDomainException(
+                    "Quantity must be greater than zero for product ID nhó: " + productId.value()
+            );
+        }
         return new OrderItem(null, productId, quantity, price);
     }
 
