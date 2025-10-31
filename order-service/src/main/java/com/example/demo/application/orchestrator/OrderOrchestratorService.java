@@ -250,7 +250,7 @@ public class OrderOrchestratorService {
     public void startCreateOrderSaga(Long orderId, // 🛑 SỬA THÀNH LONG
             BigDecimal totalAmount,
             Long userId) { // 🛑 SỬA THÀNH LONG
-
+            System.out.println("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" + totalAmount);
         // 🛑 SỬA CÁC KIỂM TRA NULL CHO LONG (Không dùng isBlank)
         if (orderId == null)
             throw new IllegalArgumentException("orderId is required");

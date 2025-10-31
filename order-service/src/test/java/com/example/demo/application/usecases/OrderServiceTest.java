@@ -1,11 +1,12 @@
 // package com.example.demo.application.usecases;
 
-// import com.example.demo.application.dto.response.TrackOrderResponse;
+// import com.example.demo.application.dto.output.TrackOrderResponse;
 // import com.example.demo.application.mapper.OrderMapper;
 // import com.example.demo.application.ports.output.repository.OrderRepositoryPort;
 // import com.example.demo.domain.entity.Order;
 // import com.example.demo.domain.entity.OrderItem; // Cần import OrderItem để tạo Order
 // import com.example.demo.domain.valueobject.order.OrderId;
+// import com.example.demo.domain.valueobject.order.RestaurantId;
 // import com.example.common_dtos.enums.OrderStatus;
 // import com.example.demo.domain.valueobject.user.UserId;
 // import org.junit.jupiter.api.Test;
@@ -52,6 +53,7 @@
 //         List<OrderItem> emptyItems = Collections.emptyList();
 //         boolean hasBeenRated = false;
         
+//         RestaurantId restaurantId = new RestaurantId(1L);
 //         Order mockOrder = new Order(
 //                 orderId, 
 //                 userId, 
@@ -59,7 +61,8 @@
 //                 status, 
 //                 createdAt, 
 //                 emptyItems, 
-//                 hasBeenRated
+//                 hasBeenRated,
+//                 restaurantId
 //         ); 
         
 //         // 1.2 Tạo đối tượng DTO giả lập

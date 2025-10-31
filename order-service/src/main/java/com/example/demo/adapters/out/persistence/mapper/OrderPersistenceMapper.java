@@ -33,6 +33,7 @@ public class OrderPersistenceMapper {
         entity.setCreatedAt(order.getCreatedAt());
         entity.setHasBeenRated(order.getHasBeenRated());
         entity.setRestaurantId(order.getRestaurantId().value());
+        entity.setFinalPrice(order.getFinalPrice());
         List<OrderItemJpaEntity> jpaItems = order.getItems().stream()
                 .map(this::toOrderItemJpaEntity) // (Phương thức này map item field)
                 .collect(Collectors.toList());
@@ -86,6 +87,7 @@ public class OrderPersistenceMapper {
         OrderId orderId = new OrderId(jpaEntity.getId());
         UserId userId = new UserId(jpaEntity.getUserId());
         BigDecimal amount = jpaEntity.getAmount();
+        BigDecimal finalPrice = jpaEntity.getFinalPrice();
         OrderStatus status = OrderStatus.valueOf(jpaEntity.getStatus());
         Instant createdAt = jpaEntity.getCreatedAt();
         List<OrderItem> items = jpaEntity.getItems().stream()
@@ -97,6 +99,7 @@ public class OrderPersistenceMapper {
                 orderId,
                 userId,
                 amount,
+                finalPrice,
                 status,
                 createdAt,
                 items,

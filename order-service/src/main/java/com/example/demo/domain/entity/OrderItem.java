@@ -27,6 +27,10 @@ public class OrderItem {
     }
 
     public static OrderItem createNew(ProductId productId, int quantity, BigDecimal price) {
+        if (quantity <= 0) { // <--- Quy tắc Domain được đặt tại đây
+            throw new Order.OrderDomainException(
+                    "Quantity must be greater than zero for product ID: " + productId.value());
+        }
         return new OrderItem(null, productId, quantity, price);
     }
 
