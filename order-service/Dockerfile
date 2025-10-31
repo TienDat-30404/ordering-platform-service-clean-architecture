@@ -25,7 +25,7 @@ WORKDIR /build
 COPY --from=builder /build /build
 COPY --from=builder /root/.m2 /root/.m2
 
-EXPOSE 8081
+EXPOSE 8080
 
 # <CHANGE> Chạy với mvn spring-boot:run để hỗ trợ hot reload
 ENV MAVEN_OPTS="-Dspring-boot.run.fork=false"

@@ -746,6 +746,7 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_DEVTOOLS_RESTART_ENABLED: "true"
       SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      
     restart: unless-stopped
     networks: [microservice-net]
 
