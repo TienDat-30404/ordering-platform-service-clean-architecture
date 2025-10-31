@@ -224,7 +224,7 @@ public class PaymentSaga {
 // /usr/bin/kafka-consumer-groups \
 // --bootstrap-server kafka:9092 \
 // --group payment-service-group \
-// --topic payment.authorize.command \
+// --topic payment.command \
 // --reset-offsets \
 // --to-latest \
 // --execute
@@ -237,7 +237,7 @@ public class PaymentSaga {
 // /usr/bin/kafka-console-consumer \
 // --bootstrap-server kafka:9092 \
 // --topic payment.command \
-// --offset 76072 \
+// --offset 76071 \
 // --partition 0 \
 // --max-messages 1 \
 // --property print.key=true

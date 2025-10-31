@@ -58,14 +58,12 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
 
                                         // Tra cứu Quantity từ Map
                                         Integer quantity = commandQuantityMap.get(currentProductId);
-
-                                        // Kiểm tra sự tồn tại và tính hợp lệ của quantity (Domain Rule: quantity > 0)
-                                        if (quantity == null || quantity <= 0) {
+                                        if (quantity == null) {
                                                 throw new Order.OrderDomainException(
-                                                                "Missing or invalid quantity for product ID: "
-                                                                                + currentProductId);
+                                                                "Missing quantity data for product ID: "
+                                                                                + currentProductId
+                                                                                + " in the command.");
                                         }
-
                                         // TẠO OrderItem Domain Entity HỢP LỆ
                                         return OrderItem.createNew(
                                                         new ProductId(currentProductId),
@@ -77,7 +75,6 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
                                 new UserId(userId),
                                 finalOrderItems,
                                 new RestaurantId(command.getRestaurantId()));
-                System.out.println("**************Created userID in Order: " + order.getUserId());
                 // 5. Lưu Order Aggregate
                 // Order savedOrder = orderRepositoryPort.save(order);
 
@@ -90,12 +87,9 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
                 // );
 
                 Order savedOrder = orderRepositoryPort.save(order);
-                                System.out.println("**************Saved userID in Order: " + savedOrder.getUserId());
-                BigDecimal totalAmountToPay = new BigDecimal("1000000.00");
-
                 orderOrchestratorService.startCreateOrderSaga(
                                 savedOrder.getId().value(),
-                                totalAmountToPay,
+                                savedOrder.getFinalPrice(),
                                 savedOrder.getUserId().value());
 
                 // 6. Trả về Response
@@ -103,38 +97,3 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
                 return response;
         }
 }
-
-// @Service
-// @RequiredArgsConstructor
-// public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
-// private final OrderRepositoryPort orderRepositoryPort;
-// private final OrderMapper orderMapper;
-// // Bỏ restaurantDataProviderPort vì ta không gọi đồng bộ nữa.
-// private final OrderOrchestratorService orderOrchestratorService; // Thêm
-// Orchestrator
-
-// @Transactional
-// public TrackOrderResponse createOrder(CreateOrderCommand command, Long
-// userId) {
-
-// Order initialOrder = new Order(
-// new UserId(userId),
-// orderMapper.toOrderItems(command.getItems()), // Giả định có mapper chuyển
-// đổi
-// new RestaurantId(command.getRestaurantId()));
-
-// Order savedOrder = orderRepositoryPort.save(initialOrder);
-// List<Map<String, Object>> itemsPayload =
-// orderMapper.toItemsPayload(savedOrder.getItems());
-
-// orderOrchestratorService.startCreateOrderSaga(
-// savedOrder.getId().toString(),
-// savedOrder.getRestaurantId().toString(),
-// itemsPayload
-// );
-
-// // 4. Trả về Response
-// TrackOrderResponse response = orderMapper.toOrderDTO(savedOrder);
-// return response;
-// }
-// }

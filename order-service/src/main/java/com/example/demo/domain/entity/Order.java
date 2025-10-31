@@ -38,11 +38,12 @@ public class Order {
         this.finalPrice = this.amount; // Khởi tạo finalPrice bằng amount ban đầu
     }
 
-    public Order(OrderId id, UserId userId, BigDecimal amount, OrderStatus status, Instant createdAt,
+    public Order(OrderId id, UserId userId, BigDecimal amount, BigDecimal finalPrice, OrderStatus status, Instant createdAt,
             List<OrderItem> items, boolean hasBeenRated, RestaurantId restaurantId) {
         this.id = id;
         this.userId = userId;
         this.amount = amount;
+        this.finalPrice = finalPrice;
         this.status = status;
         this.createdAt = createdAt;
         this.items = items;
