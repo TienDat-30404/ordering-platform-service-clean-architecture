@@ -92,27 +92,27 @@ class CreateOrderUseCaseImplTest {
     verify(orderMapper, times(1)).toOrderDTO(savedOrder);
   }
 
-//   @Test
-//   void createOrder_invalidQuantity_throwsDomainException() {
-//     // Arrange
-//     CreateOrderCommand command = mock(CreateOrderCommand.class);
-//     CreateOrderItemCommand item = mock(CreateOrderItemCommand.class);
+  @Test
+  void createOrder_invalidQuantity_throwsDomainException() {
+    // Arrange
+    CreateOrderCommand command = mock(CreateOrderCommand.class);
+    CreateOrderItemCommand item = mock(CreateOrderItemCommand.class);
 
-//     when(item.getProductId()).thenReturn(1L);
-//     when(item.getQuantity()).thenReturn(0); // invalid per domain rule
-//     when(command.getItems()).thenReturn((List) Arrays.asList(item));
-//     when(command.getRestaurantId()).thenReturn(10L);
+    when(item.getProductId()).thenReturn(1L);
+    when(item.getQuantity()).thenReturn(0); // invalid per domain rule
+    when(command.getItems()).thenReturn((List) Arrays.asList(item));
+    when(command.getRestaurantId()).thenReturn(10L);
 
-//     ItemValidationResponse validated = mock(ItemValidationResponse.class);
-//     when(validated.getMenuItemId()).thenReturn(1L);
-//     lenient().when(validated.getPrice()).thenReturn(new BigDecimal("10.00"));
+    ItemValidationResponse validated = mock(ItemValidationResponse.class);
+    when(validated.getMenuItemId()).thenReturn(1L);
+    lenient().when(validated.getPrice()).thenReturn(new BigDecimal("10.00"));
 
-//     when(restaurantDataProviderPort.validateOrderCreation(eq(10L), anyList()))
-//         .thenReturn(Arrays.asList(validated));
+    when(restaurantDataProviderPort.validateOrderCreation(eq(10L), anyList()))
+        .thenReturn(Arrays.asList(validated));
 
-//     // Act & Assert
-//     assertThrows(Order.OrderDomainException.class, () -> useCase.createOrder(command, 42L));
-//     verify(orderRepositoryPort, never()).save(any());
-//     verify(orderOrchestratorService, never()).startCreateOrderSaga(any(), any(BigDecimal.class), any());
-//   }
+    // Act & Assert
+    assertThrows(Order.OrderDomainException.class, () -> useCase.createOrder(command, 42L));
+    verify(orderRepositoryPort, never()).save(any());
+    verify(orderOrchestratorService, never()).startCreateOrderSaga(any(), any(BigDecimal.class), any());
+  }
 }
