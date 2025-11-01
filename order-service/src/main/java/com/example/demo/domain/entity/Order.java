@@ -218,6 +218,14 @@ public class Order {
         // zero.");
         // }
     }
+    public void validateOrder() {
+        //Kiểm tra Item
+        validateItemsExist();
+        //Kiểm tra User
+        validateUserIdExists();
+        //Tính tổng giá
+        calculateTotalPrice();
+    }
 
     // kiêm tra đánh giá order (rating 1* - 5*)
     public void validateForRating() {
