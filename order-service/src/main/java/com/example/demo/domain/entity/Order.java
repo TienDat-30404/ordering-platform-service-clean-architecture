@@ -38,7 +38,8 @@ public class Order {
         this.finalPrice = this.amount; // Khởi tạo finalPrice bằng amount ban đầu
     }
 
-    public Order(OrderId id, UserId userId, BigDecimal amount, BigDecimal finalPrice, OrderStatus status, Instant createdAt,
+    public Order(OrderId id, UserId userId, BigDecimal amount, BigDecimal finalPrice, OrderStatus status,
+            Instant createdAt,
             List<OrderItem> items, boolean hasBeenRated, RestaurantId restaurantId) {
         this.id = id;
         this.userId = userId;
@@ -86,8 +87,14 @@ public class Order {
     public RestaurantId getRestaurantId() {
         return restaurantId;
     }
-    public boolean getHasBeenRated() { return hasBeenRated; }
-    public void setHasBeenRated(boolean hasBeenRated) { this.hasBeenRated = hasBeenRated; }
+
+    public boolean getHasBeenRated() {
+        return hasBeenRated;
+    }
+
+    public void setHasBeenRated(boolean hasBeenRated) {
+        this.hasBeenRated = hasBeenRated;
+    }
 
     public static class OrderDomainException extends RuntimeException {
         public OrderDomainException(String message) {
@@ -106,7 +113,7 @@ public class Order {
         this.status = OrderStatus.PAID;
     }
 
-     public void canceled() {
+    public void canceled() {
         this.status = OrderStatus.CANCELLED;
     }
 
@@ -207,7 +214,8 @@ public class Order {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // if (this.amount.compareTo(BigDecimal.ZERO) <= 0) {
-        //     throw new OrderDomainException("Calculated total price must be greater than zero.");
+        // throw new OrderDomainException("Calculated total price must be greater than
+        // zero.");
         // }
     }
 
