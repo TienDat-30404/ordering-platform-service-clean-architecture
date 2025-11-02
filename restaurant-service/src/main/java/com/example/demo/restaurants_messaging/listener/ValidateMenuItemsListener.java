@@ -17,6 +17,9 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+import com.example.demo.application.dto.stock.StockCheckItem;
+import com.example.demo.application.dto.stock.StockCheckResult;
+import com.example.demo.application.ports.input.CheckStockUseCase;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -32,7 +35,7 @@ public class ValidateMenuItemsListener {
     private final KafkaTemplate<String, String> template;
     private final ValidateMenuItemUseCase validateMenuItemUseCase;
     private final ObjectMapper om = new ObjectMapper();
-
+    private final CheckStockUseCase checkStockUseCase;
     /**
      * Hỗ trợ payload:
      * A) {"payload":{"items":[1,2,3]}}
@@ -123,6 +126,47 @@ public class ValidateMenuItemsListener {
                     SagaStatus.RESTAURANT_VALIDATION_FAIL, RestaurantOrderStatus.VALIDATED_FAIL);
             replyInvalid(replyTo, orderId, sagaId, errors);
             return;
+        }
+        boolean checkStock = payload.path("checkStock").asBoolean(false);
+        if (checkStock) {
+            List<StockCheckItem> stockItems = new ArrayList<>();
+            for (Long pid : pr.productIds) {
+                int q = pr.quantityByProductId.getOrDefault(pid, 1);
+                stockItems.add(new StockCheckItem(pid, q));
+            }
+
+            List<StockCheckResult> checked = checkStockUseCase.check(stockItems);
+            List<ErrorProduct> stockErrors = new ArrayList<>();
+            if (checked != null) {
+                for (StockCheckResult rs : checked) {
+                    if (!rs.sufficient()) {
+                        stockErrors.add(new ErrorProduct(
+                                rs.productId(),
+                                "INSUFFICIENT_STOCK: required=" +
+                                        pr.quantityByProductId.getOrDefault(rs.productId(), 1) +
+                                        ", available=" + rs.available()
+                        ));
+                    }
+                }
+            }
+
+            if (!stockErrors.isEmpty()) {
+                Map<String, Object> outPayload = Map.of(
+                        "eventType", "RESTAURANT_ITEMS_INVALID",
+                        "orderId", orderId,
+                        "payload", Map.of(
+                                "errors", stockErrors,
+                                "invalidIds", stockErrors.stream().map(ErrorProduct::getProductId).filter(Objects::nonNull).toList(),
+                                "stockIssue", true,
+                                "restaurantId", restaurantId
+                        ),
+                        "timestamp", Instant.now().toString()
+                );
+                String outJson = om.writeValueAsString(outPayload);
+                log.info("[RESTAURANT->SAGA] INVALID (stock) key={} sagaId={} payload={}", orderId, sagaId, outJson);
+                send(replyTo, orderId, sagaId, "RESTAURANT_ITEMS_INVALID", outJson);
+                return;
+            }
         }
 
         // Reply VALID

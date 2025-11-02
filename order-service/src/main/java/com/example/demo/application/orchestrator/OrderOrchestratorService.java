@@ -39,6 +39,7 @@ public class OrderOrchestratorService {
     private final ConfirmOrderPaidUseCase confirmOrderPaidUseCase;
     private final CanceledOrderUseCase canceledOrderUseCase;
     private final OrderRepositoryPort orderRepositoryPort;
+    private final java.util.Set<String> processedEvents = java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
     private final java.util.Map<String, java.util.List<java.util.Map<String,Object>>> pendingItems = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.Map<String, String> pendingRestaurant = new java.util.concurrent.ConcurrentHashMap<>();
     private final OrderRepositoryPort orderRepository;
@@ -154,7 +155,6 @@ public class OrderOrchestratorService {
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(PAID) failed but skip re-consume. orderId={} err={}",
                                 orderId, ex.toString());
-                        return;
                     }
                     callRestaurantValidate(rec, orderId);
                 }
@@ -163,7 +163,6 @@ public class OrderOrchestratorService {
                         updateOrderStatus.setStatus(orderId, OrderStatus.CANCELLED);
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(CANCELLED) failed. orderId={} err={}", orderId, ex.toString());
-                        return;
                     }
                     cancelOrder(orderId, "payment failed");
                 }
@@ -172,7 +171,6 @@ public class OrderOrchestratorService {
                         updateOrderStatus.setStatus(orderId, OrderStatus.APPROVED);
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(APPROVED) failed. orderId={} err={}", orderId, ex.toString());
-                        return;
                     }
                     callRestaurantStartPreparation(rec, orderId);
                 }
@@ -182,7 +180,6 @@ public class OrderOrchestratorService {
                         updateOrderStatus.setStatus(orderId, OrderStatus.CANCELLING);
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(CANCELLING) failed. orderId={} err={}", orderId, ex.toString());
-                        return;
                     }
                 }
                 case "PAYMENT_REFUNDED", "PAYMENT_CANCELED" -> {
@@ -190,7 +187,6 @@ public class OrderOrchestratorService {
                         updateOrderStatus.setStatus(orderId, OrderStatus.CANCELLED);
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(CANCELLED) failed. orderId={} err={}", orderId, ex.toString());
-                        return;
                     }
                     cancelOrder(orderId, "payment void/refund after invalid menu");
                 }
@@ -199,7 +195,6 @@ public class OrderOrchestratorService {
                         updateOrderStatus.setStatus(orderId, OrderStatus.PREPARING);
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(PREPARING) failed. orderId={} err={}", orderId, ex.toString());
-                        return; // tùy bạn: có thể return để tránh bắn COMPLETE_ORDER khi DB chưa update
                     }
                     callRestaurantCompleteOrder(rec, orderId);
                 }
@@ -208,7 +203,6 @@ public class OrderOrchestratorService {
                         updateOrderStatus.setStatus(orderId, OrderStatus.COMPLETED);
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(COMPLETED) failed. orderId={} err={}", orderId, ex.toString());
-                        return;
                     }
                     callRestaurantDeductStock(rec, orderId);
                     confirmOrder(orderId);
