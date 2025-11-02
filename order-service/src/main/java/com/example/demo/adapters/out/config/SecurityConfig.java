@@ -26,6 +26,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // .requestMatchers(HttpMethod.GET, "/api/v1/orders/**").permitAll()
                         // .requestMatchers(HttpMethod.POST, "/api/v1/orders").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/statistics").hasAnyAuthority("admin")
                         .requestMatchers(HttpMethod.POST, "/api/v1/orders/rating").authenticated()
                         .requestMatchers("/error").permitAll()

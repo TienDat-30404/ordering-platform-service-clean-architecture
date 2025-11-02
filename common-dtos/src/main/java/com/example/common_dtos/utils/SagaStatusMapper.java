@@ -29,6 +29,7 @@ public final class SagaStatusMapper {
             case COMPLETED   -> SagaStatus.COMPLETED;
             case CANCELLING  -> SagaStatus.COMPENSATION_STARTED;
             case CANCELLED   -> SagaStatus.CANCELLED;
+            case PREPARING -> SagaStatus.PREPARING;
         };
     }
 
@@ -42,7 +43,7 @@ public final class SagaStatusMapper {
             case PAYMENT_AUTHORIZED   -> SagaStatus.PAYMENT_AUTHORIZED;
             case PAYMENT_FAILED       -> SagaStatus.PAYMENT_FAILED;
             case PREPARING, READY_FOR_DELIVERY
-                    -> SagaStatus.PAYMENT_AUTHORIZED;
+                    -> SagaStatus.PREPARING;
             case COMPLETED            -> SagaStatus.COMPLETED;
             case COMPENSATING         -> SagaStatus.COMPENSATION_STARTED;
             case CANCELLED            -> SagaStatus.CANCELLED;
@@ -71,6 +72,7 @@ public final class SagaStatusMapper {
             case PAYMENT_AUTHORIZED        -> OrderStatus.PAID;
             case COMPLETED                 -> OrderStatus.COMPLETED;
             case COMPENSATION_STARTED      -> OrderStatus.CANCELLING;
+            case PREPARING -> OrderStatus.PREPARING;
             case CANCELLED, COMPENSATED,
                  RESTAURANT_VALIDATION_FAIL, PAYMENT_FAILED
                     -> OrderStatus.CANCELLED;
@@ -87,6 +89,7 @@ public final class SagaStatusMapper {
             case RESTAURANT_VALIDATION_FAIL-> RestaurantOrderStatus.VALIDATED_FAIL;
             case PAYMENT_AUTHORIZED        -> RestaurantOrderStatus.PAYMENT_AUTHORIZED;
             case PAYMENT_FAILED            -> RestaurantOrderStatus.PAYMENT_FAILED;
+            case PREPARING                 -> RestaurantOrderStatus.PREPARING;
             case COMPENSATION_STARTED      -> RestaurantOrderStatus.COMPENSATING;
             case COMPLETED                 -> RestaurantOrderStatus.COMPLETED;
             case COMPENSATED, CANCELLED    -> RestaurantOrderStatus.CANCELLED;

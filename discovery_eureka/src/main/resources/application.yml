@@ -1,14 +1,31 @@
 server:
-  port: 8761  # Cổng mặc định của Eureka Server
+  port: 8761
 
 spring:
   application:
-    name: eureka-server
+    name: discovery-server   # tên tuỳ bạn
+
 eureka:
+  instance:
+    hostname: discovery-server   # tên service trong docker-compose
   client:
-    register-with-eureka: false  # Không tự đăng ký chính nó
-    fetch-registry: false  # Không cần lấy danh sách service từ chính nó
+    register-with-eureka: false
+    fetch-registry: false
     service-url:
-      defaultZone: http://localhost:${server.port}/eureka/
+      defaultZone: http://discovery-server:8761/eureka/  # KHÔNG dùng localhost trong container
   server:
-    enable-self-preservation: false
+    enable-self-preservation: false   # dev only
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+    # prometheus:
+    #   enabled: true   # KHÔNG cần ở SB 3.5; nếu muốn kiểm soát quyền:
+    prometheus:
+      access: read-only

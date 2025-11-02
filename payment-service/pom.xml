@@ -45,7 +45,7 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- <dependency>
+        <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
             <exclusions>
@@ -62,7 +62,7 @@
                     <artifactId>prometheus-metrics-instrumentation-spring</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency> -->
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>

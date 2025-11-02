@@ -1,760 +1,803 @@
 
-# version: '3.8'
+  # version: '3.8'
 
-# services:
-#   # -------------------- Monitoring --------------------
-#   prometheus:
-#     image: prom/prometheus:latest
-#     container_name: prometheus
-#     ports:
-#       - "9090:9090"
-#     volumes:
-#       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-#       - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml
-#     command: ['--config.file=/etc/prometheus/prometheus.yml']
-#     restart: unless-stopped
-#     networks: [microservice-net]
+  # services:
+  #   # -------------------- Monitoring --------------------
+  #   prometheus:
+  #     image: prom/prometheus:latest
+  #     container_name: prometheus
+  #     ports:
+  #       - "9090:9090"
+  #     volumes:
+  #       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+  #       - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml
+  #     command: ['--config.file=/etc/prometheus/prometheus.yml']
+  #     restart: unless-stopped
+  #     networks: [microservice-net]
 
-#   # -------------------- Databases ---------------------
-#   order-db:
-#     image: postgres:15-alpine
-#     container_name: order_db_container
-#     environment:
-#       POSTGRES_DB: order_service_clean_architecture
-#       POSTGRES_USER: user
-#       POSTGRES_PASSWORD: password
-#     ports:
-#       - "5433:5432"
-#     volumes:
-#       - order_db_data:/var/lib/postgresql/data
-#     healthcheck:
-#       test: ["CMD-SHELL", "pg_isready -U user -d order_service_clean_architecture"]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 5
-#     restart: unless-stopped
-#     networks: [microservice-net]
+  #   # -------------------- Databases ---------------------
+  #   order-db:
+  #     image: postgres:15-alpine
+  #     container_name: order_db_container
+  #     environment:
+  #       POSTGRES_DB: order_service_clean_architecture
+  #       POSTGRES_USER: user
+  #       POSTGRES_PASSWORD: password
+  #     ports:
+  #       - "5433:5432"
+  #     volumes:
+  #       - order_db_data:/var/lib/postgresql/data
+  #     healthcheck:
+  #       test: ["CMD-SHELL", "pg_isready -U user -d order_service_clean_architecture"]
+  #       interval: 10s
+  #       timeout: 5s
+  #       retries: 5
+  #     restart: unless-stopped
+  #     networks: [microservice-net]
 
-#   restaurant-db:
-#     image: postgres:15-alpine
-#     container_name: restaurant_db_container
-#     environment:
-#       POSTGRES_DB: restaurant_service_clean_architecture
-#       POSTGRES_USER: user
-#       POSTGRES_PASSWORD: password
-#     ports:
-#       - "5434:5432"
-#     volumes:
-#       - restaurant_db_data:/var/lib/postgresql/data
+  #   restaurant-db:
+  #     image: postgres:15-alpine
+  #     container_name: restaurant_db_container
+  #     environment:
+  #       POSTGRES_DB: restaurant_service_clean_architecture
+  #       POSTGRES_USER: user
+  #       POSTGRES_PASSWORD: password
+  #     ports:
+  #       - "5434:5432"
+  #     volumes:
+  #       - restaurant_db_data:/var/lib/postgresql/data
 
-#     healthcheck:
-#       test: ["CMD-SHELL", "pg_isready -U user -d restaurant_service_clean_architecture"]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 5
-#     restart: unless-stopped
-#     networks: [microservice-net]
-
-
-#   user-db:
-#     image: postgres:15-alpine
-#     container_name: user_db_container
-#     environment:
-#       POSTGRES_DB: user_service_clean_architecture
-#       POSTGRES_USER: user
-#       POSTGRES_PASSWORD: password
-#     ports:
-#       - "5436:5432"
-#     volumes:
-#       - user_db_data:/var/lib/postgresql/data
-#     healthcheck:
-#       test: ["CMD-SHELL", "pg_isready -U user -d user_service_clean_architecture"]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 5
-#     restart: unless-stopped
-#     networks: [microservice-net]
-
-#   payment-db:
-#     image: postgres:15-alpine
-#     container_name: payment_db_container
-#     environment:
-#       POSTGRES_DB: payment_service_clean_architecture
-#       POSTGRES_USER: user
-#       POSTGRES_PASSWORD: password
-#     ports:
-#       - "5435:5432"
-#     volumes:
-#       - payment_db_data:/var/lib/postgresql/data
-#     healthcheck:
-#       test: ["CMD-SHELL", "pg_isready -U user -d payment_service_clean_architecture"]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 5
-#     restart: unless-stopped
-#     networks: [microservice-net]
+  #     healthcheck:
+  #       test: ["CMD-SHELL", "pg_isready -U user -d restaurant_service_clean_architecture"]
+  #       interval: 10s
+  #       timeout: 5s
+  #       retries: 5
+  #     restart: unless-stopped
+  #     networks: [microservice-net]
 
 
+  #   user-db:
+  #     image: postgres:15-alpine
+  #     container_name: user_db_container
+  #     environment:
+  #       POSTGRES_DB: user_service_clean_architecture
+  #       POSTGRES_USER: user
+  #       POSTGRES_PASSWORD: password
+  #     ports:
+  #       - "5436:5432"
+  #     volumes:
+  #       - user_db_data:/var/lib/postgresql/data
+  #     healthcheck:
+  #       test: ["CMD-SHELL", "pg_isready -U user -d user_service_clean_architecture"]
+  #       interval: 10s
+  #       timeout: 5s
+  #       retries: 5
+  #     restart: unless-stopped
+  #     networks: [microservice-net]
 
-#   # Thêm vào dưới phần Services
-
-#   discovery-server:
-#     container_name: discovery-server
-#     image: eclipse-temurin:21-jre-alpine # Thay bằng image đã build/build context
-#     ports:
-#       - "8761:8761" # Cổng Eureka mặc định
-#     environment:
-#       SERVER_PORT: 8761
-#       EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
-#       EUREKA_CLIENT_FETCH_REGISTRY: "false"
-#     volumes:
-#       - ./discovery_eureka/target/classes:/app/classes
-#       - ./discovery_eureka/src/main/resources:/app/resources
-#       - ./discovery_eureka/target/dependency:/app/dependency
-#     working_dir: /app
-#     command: ["java","-cp","classes:resources:dependency/*","com.example.discovery_eureka.DiscoveryEurekaApplication"] 
-#     restart: unless-stopped
-#     networks: [microservice-net]
-
-#   api-gateway:
-#     container_name: api-gateway
-#     image: eclipse-temurin:21-jre-alpine # Thay bằng image đã build/build context
-#     ports:
-#       - "8079:8080" # Cổng công khai cho client
-#     depends_on:
-#       discovery-server:
-#         condition: service_started
-#     environment:
-#       SERVER_PORT: 8080
-#       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
-#     volumes:
-#       - ./api-gateway/target/classes:/app/classes
-#       - ./api-gateway/src/main/resources:/app/resources
-#       - ./api-gateway/target/dependency:/app/dependency
-#     working_dir: /app
-#     command: ["java","-cp","classes:resources:dependency/*","com.example.api_gateway.ApiGatewayApplication"] # Thay thế tên class chính xác
-#     restart: unless-stopped
-#     networks: [microservice-net]
-
-#   # # -------------------- Services ----------------------
-#   order-service:
-#     container_name: order-service
-#     image: eclipse-temurin:21-jre-alpine
-#     ports:
-#       - "8081:8080"  # host:container
-#     depends_on:
-#       order-db:
-#         condition: service_healthy
-#       kafka:
-#         condition: service_started
-#       discovery-server: 
-#         condition: service_started
-#     environment:
-#       # --- Kafka (internal listener inside docker network)
-#       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-#       # Producer: idempotent + retries (fix error)
-#       SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
-#       SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
-#       SPRING_KAFKA_PRODUCER_ACKS: all
-#       SPRING_KAFKA_PRODUCER_RETRIES: 5
-#       SPRING_KAFKA_PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE: "true"
-#       SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION: 5
-#       SPRING_KAFKA_PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS: 120000
-#       # Consumer (tùy chọn): group id riêng
-#       SPRING_KAFKA_CONSUMER_GROUP_ID: order-service-group
-#       SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
-#       # --- Datasource
-#       SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/order_service_clean_architecture
-#       SPRING_DATASOURCE_USERNAME: user
-#       SPRING_DATASOURCE_PASSWORD: password
-#       # --- Server
-#       SERVER_PORT: 8080
-#     volumes:
-#       - ./order-service/target/classes:/app/classes
-#       - ./order-service/src/main/resources:/app/resources
-#       - ./order-service/target/dependency:/app/dependency
-#     working_dir: /app
-#     command: ["java", "-Dspring.application.name=order-service", "-cp", "classes:resources:dependency/*", "com.example.demo.DemoApplication"]    
-#     restart: unless-stopped
-#     networks: [microservice-net]
-
-#   restaurant-service:
-#     container_name: restaurant-service
-#     image: eclipse-temurin:21-jre-alpine
-#     ports:
-#       - "8082:8080"
-#     depends_on:
-#       restaurant-db:
-#         condition: service_healthy
-#       redis: 
-#         condition: service_started
-#       kafka:
-#         condition: service_started
-#       discovery-server: 
-#         condition: service_started
-#     environment:
-#       # --- Kafka
-#       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-#       # Producer: idempotent + retries (vì có publish reply)
-#       SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
-#       SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
-#       SPRING_KAFKA_PRODUCER_ACKS: all
-#       SPRING_KAFKA_PRODUCER_RETRIES: 5
-#       SPRING_KAFKA_PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE: "true"
-#       SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION: 5
-#       SPRING_KAFKA_PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS: 120000
-#       # Consumer group id (khớp code listener)
-#       SPRING_KAFKA_CONSUMER_GROUP_ID: restaurant-service-group
-#       SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
-#       # --- Datasource
-#       SPRING_DATASOURCE_URL: jdbc:postgresql://restaurant-db:5432/restaurant_service_clean_architecture
-#       SPRING_DATASOURCE_USERNAME: user
-#       SPRING_DATASOURCE_PASSWORD: password
-#       # --- Server
-#       SERVER_PORT: 8080
-#       SPRING_DEVTOOLS_RESTART_ENABLED: "true"
-#       MAIN_APP_CLASS: com.example.demo.DemoApplication
-#       SPRING_DATA_REDIS_HOST: redis       # <<< Tên biến môi trường CHÍNH XÁC
-#       SPRING_DATA_REDIS_PORT: 6379
-#     volumes:
-#       - ./restaurant-service/target/classes:/app/classes
-#       - ./restaurant-service/src/main/resources:/app/resources
-#       - ./restaurant-service/target/dependency:/app/dependency
-#     working_dir: /app
-#     # Chạy ứng dụng trực tiếp từ các file classes (dùng DevTools)
-#     # command: ["java", "-cp", "classes:resources:dependency/*", "com.example.demo.DemoApplication"]
-#     command: ["java", "-Dspring.application.name=restaurant-service", "-cp", "classes:resources:dependency/*", "com.example.demo.DemoApplication"]    
-
-#     restart: unless-stopped
-#     networks: [microservice-net]
-
-#   payment-service:
-#     container_name: payment-service
-#     image: eclipse-temurin:21-jre-alpine
-#     ports:
-#       - "8083:8080"
-#     depends_on:
-#       payment-db:
-#         condition: service_healthy
-#       kafka:
-#         condition: service_started
-#       discovery-server: 
-#         condition: service_started
-#     environment:
-#       # --- Kafka
-#       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-#       # Producer (publish reply)
-#       SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
-#       SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
-#       SPRING_KAFKA_PRODUCER_ACKS: all
-#       SPRING_KAFKA_PRODUCER_RETRIES: 5
-#       SPRING_KAFKA_PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE: "true"
-#       SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION: 5
-#       SPRING_KAFKA_PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS: 120000
-#       # Consumer (nếu có listener khác)
-#       SPRING_KAFKA_CONSUMER_GROUP_ID: payment-service-group
-#       SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
-#       # --- Datasource
-#       SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment_service_clean_architecture
-#       SPRING_DATASOURCE_USERNAME: user
-#       SPRING_DATASOURCE_PASSWORD: password
-#       # --- Server
-#       SERVER_PORT: 8080
-#       SPRING_DEVTOOLS_RESTART_ENABLED: "true"
-#       MAIN_APP_CLASS: com.example.demo.DemoApplication
-#       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-#     volumes:
-#       - ./payment-service/target/classes:/app/classes
-#       - ./payment-service/src/main/resources:/app/resources
-#       - ./payment-service/target/dependency:/app/dependency
-#     working_dir: /app
-#     command: ["java", "-Dspring.application.name=payment-service", "-cp", "classes:resources:dependency/*", "com.example.demo.DemoApplication"]    
-#     restart: unless-stopped
-#     networks: [microservice-net]
-
-#   user-service:
-#     container_name: user-service
-#     image: eclipse-temurin:21-jre-alpine
-#     ports:
-#       - "8084:8080"  # host:container
-#     depends_on:
-#       user-db:
-#         condition: service_healthy
-#       discovery-server: 
-#         condition: service_started
-#     environment:
-#       SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/user_service_clean_architecture
-#       SPRING_DATASOURCE_USERNAME: user
-#       SPRING_DATASOURCE_PASSWORD: password
-#       SERVER_PORT: 8080
-#     volumes:
-#       - ./user-service/target/classes:/app/classes
-#       - ./user-service/src/main/resources:/app/resources
-#       - ./user-service/target/dependency:/app/dependency
-#     working_dir: /app
-#     command: ["java","-cp","classes:resources:dependency/*","com.example.user_service.UserServiceApplication"]
-#     restart: unless-stopped
-#     networks: [microservice-net]
-
-#   zookeeper:
-#     image: confluentinc/cp-zookeeper:7.5.0
-#     container_name: zookeeper
-#     environment:
-#       ZOOKEEPER_CLIENT_PORT: 2181
-#     ports:
-#       - "2181:2181"
-#     restart: unless-stopped
-#     networks: [microservice-net]
-
-#   kafka:
-#     image: confluentinc/cp-kafka:7.5.0
-#     container_name: kafka
-#     depends_on:
-#       - zookeeper
-#     ports:
-#       - "29092:29092"
-#       - "9092:9092"
-#     environment:
-#       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-#       KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
-#       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
-#       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-#       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-#       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-#       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-#     restart: unless-stopped
-#     networks: [microservice-net]
-
-#   # kafka:
-#   #   image: confluentinc/cp-kafka:7.5.0
-#   #   container_name: kafka
-#   #   hostname: kafka
-#   #   ports:
-#   #     - "9092:9092"
-#   #   environment:
-#   #     KAFKA_NODE_ID: 1
-#   #     KAFKA_PROCESS_ROLES: broker,controller
-      
-#   #     # 1. KAFKA_LISTENERS: Định nghĩa tất cả các giao diện mà Kafka sẽ lắng nghe.
-#   #     #    Sử dụng các tên Listener: INTERNAL, EXTERNAL, CONTROLLER.
-#   #     KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-      
-#   #     # 2. KAFKA_ADVERTISED_LISTENERS: Định nghĩa địa chỉ mà client (các service khác) sẽ sử dụng để kết nối.
-#   #     #    - INTERNAL: Sử dụng tên service 'kafka' và cổng 29092 (cho các service Docker nội bộ).
-#   #     #    - EXTERNAL: Sử dụng 'localhost' và cổng 9092 (cho Host/máy tính của bạn).
-#   #     KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
-      
-#   #     # 3. KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: Ánh xạ tên Listener với giao thức bảo mật.
-#   #     #    Phải khớp chính xác các tên trong KAFKA_LISTENERS và KAFKA_ADVERTISED_LISTENERS.
-#   #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
-      
-#   #     KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      
-#   #     # 4. KAFKA_INTER_BROKER_LISTENER_NAME: Tên Listener dùng cho các broker/controller giao tiếp với nhau.
-#   #     KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL 
-      
-#   #     # KRaft Quorum
-#   #     KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      
-#   #     # Cấu hình dữ liệu
-#   #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-#   #     KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-#   #     KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-#   #     KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-#   #     KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-#   #     KAFKA_LOG_RETENTION_HOURS: 168
-#   #     KAFKA_LOG_SEGMENT_BYTES: 1073741824
-#   #     KAFKA_LOG_DIRS: /var/lib/kafka/data
-#   #     CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
-#   #   volumes:
-#   #     - kafka-data:/var/lib/kafka/data
-#   #   networks: [microservice-net]
-#   #   restart: unless-stopped
-#   #   healthcheck:
-#   #     # Healthcheck dùng kết nối nội bộ (localhost:9092) bên trong container, nên nó hoạt động.
-#   #     test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
-#   #     interval: 10s
-#   #     timeout: 5s
-#   #     retries: 5
-
-  
-
-#   redis:
-#     container_name: redis-clean-architecture
-#     image: redis:7
-#     ports:
-#       - "6379:6379"
-#     networks: [microservice-net]
-
-# volumes:
-#   order_db_data:
-#   restaurant_db_data:
-#   kafka-data:
-#   payment_db_data:
-#   user_db_data:
+  #   payment-db:
+  #     image: postgres:15-alpine
+  #     container_name: payment_db_container
+  #     environment:
+  #       POSTGRES_DB: payment_service_clean_architecture
+  #       POSTGRES_USER: user
+  #       POSTGRES_PASSWORD: password
+  #     ports:
+  #       - "5435:5432"
+  #     volumes:
+  #       - payment_db_data:/var/lib/postgresql/data
+  #     healthcheck:
+  #       test: ["CMD-SHELL", "pg_isready -U user -d payment_service_clean_architecture"]
+  #       interval: 10s
+  #       timeout: 5s
+  #       retries: 5
+  #     restart: unless-stopped
+  #     networks: [microservice-net]
 
 
 
-# networks:
-#   microservice-net:
-#     driver: bridge
+  #   # Thêm vào dưới phần Services
+
+  #   discovery-server:
+  #     container_name: discovery-server
+  #     image: eclipse-temurin:21-jre-alpine # Thay bằng image đã build/build context
+  #     ports:
+  #       - "8761:8761" # Cổng Eureka mặc định
+  #     environment:
+  #       SERVER_PORT: 8761
+  #       EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
+  #       EUREKA_CLIENT_FETCH_REGISTRY: "false"
+  #     volumes:
+  #       - ./discovery_eureka/target/classes:/app/classes
+  #       - ./discovery_eureka/src/main/resources:/app/resources
+  #       - ./discovery_eureka/target/dependency:/app/dependency
+  #     working_dir: /app
+  #     command: ["java","-cp","classes:resources:dependency/*","com.example.discovery_eureka.DiscoveryEurekaApplication"]
+  #     restart: unless-stopped
+  #     networks: [microservice-net]
+
+  #   api-gateway:
+  #     container_name: api-gateway
+  #     image: eclipse-temurin:21-jre-alpine # Thay bằng image đã build/build context
+  #     ports:
+  #       - "8079:8080" # Cổng công khai cho client
+  #     depends_on:
+  #       discovery-server:
+  #         condition: service_started
+  #     environment:
+  #       SERVER_PORT: 8080
+  #       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+  #     volumes:
+  #       - ./api-gateway/target/classes:/app/classes
+  #       - ./api-gateway/src/main/resources:/app/resources
+  #       - ./api-gateway/target/dependency:/app/dependency
+  #     working_dir: /app
+  #     command: ["java","-cp","classes:resources:dependency/*","com.example.api_gateway.ApiGatewayApplication"] # Thay thế tên class chính xác
+  #     restart: unless-stopped
+  #     networks: [microservice-net]
+
+  #   # # -------------------- Services ----------------------
+  #   order-service:
+  #     container_name: order-service
+  #     image: eclipse-temurin:21-jre-alpine
+  #     ports:
+  #       - "8081:8080"  # host:container
+  #     depends_on:
+  #       order-db:
+  #         condition: service_healthy
+  #       kafka:
+  #         condition: service_started
+  #       discovery-server:
+  #         condition: service_started
+  #     environment:
+  #       # --- Kafka (internal listener inside docker network)
+  #       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  #       # Producer: idempotent + retries (fix error)
+  #       SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+  #       SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+  #       SPRING_KAFKA_PRODUCER_ACKS: all
+  #       SPRING_KAFKA_PRODUCER_RETRIES: 5
+  #       SPRING_KAFKA_PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE: "true"
+  #       SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION: 5
+  #       SPRING_KAFKA_PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS: 120000
+  #       # Consumer (tùy chọn): group id riêng
+  #       SPRING_KAFKA_CONSUMER_GROUP_ID: order-service-group
+  #       SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+  #       # --- Datasource
+  #       SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/order_service_clean_architecture
+  #       SPRING_DATASOURCE_USERNAME: user
+  #       SPRING_DATASOURCE_PASSWORD: password
+  #       # --- Server
+  #       SERVER_PORT: 8080
+  #     volumes:
+  #       - ./order-service/target/classes:/app/classes
+  #       - ./order-service/src/main/resources:/app/resources
+  #       - ./order-service/target/dependency:/app/dependency
+  #     working_dir: /app
+  #     command: ["java", "-Dspring.application.name=order-service", "-cp", "classes:resources:dependency/*", "com.example.demo.DemoApplication"]
+  #     restart: unless-stopped
+  #     networks: [microservice-net]
+
+  #   restaurant-service:
+  #     container_name: restaurant-service
+  #     image: eclipse-temurin:21-jre-alpine
+  #     ports:
+  #       - "8082:8080"
+  #     depends_on:
+  #       restaurant-db:
+  #         condition: service_healthy
+  #       redis:
+  #         condition: service_started
+  #       kafka:
+  #         condition: service_started
+  #       discovery-server:
+  #         condition: service_started
+  #     environment:
+  #       # --- Kafka
+  #       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  #       # Producer: idempotent + retries (vì có publish reply)
+  #       SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+  #       SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+  #       SPRING_KAFKA_PRODUCER_ACKS: all
+  #       SPRING_KAFKA_PRODUCER_RETRIES: 5
+  #       SPRING_KAFKA_PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE: "true"
+  #       SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION: 5
+  #       SPRING_KAFKA_PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS: 120000
+  #       # Consumer group id (khớp code listener)
+  #       SPRING_KAFKA_CONSUMER_GROUP_ID: restaurant-service-group
+  #       SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+  #       # --- Datasource
+  #       SPRING_DATASOURCE_URL: jdbc:postgresql://restaurant-db:5432/restaurant_service_clean_architecture
+  #       SPRING_DATASOURCE_USERNAME: user
+  #       SPRING_DATASOURCE_PASSWORD: password
+  #       # --- Server
+  #       SERVER_PORT: 8080
+  #       SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+  #       MAIN_APP_CLASS: com.example.demo.DemoApplication
+  #       SPRING_DATA_REDIS_HOST: redis       # <<< Tên biến môi trường CHÍNH XÁC
+  #       SPRING_DATA_REDIS_PORT: 6379
+  #     volumes:
+  #       - ./restaurant-service/target/classes:/app/classes
+  #       - ./restaurant-service/src/main/resources:/app/resources
+  #       - ./restaurant-service/target/dependency:/app/dependency
+  #     working_dir: /app
+  #     # Chạy ứng dụng trực tiếp từ các file classes (dùng DevTools)
+  #     # command: ["java", "-cp", "classes:resources:dependency/*", "com.example.demo.DemoApplication"]
+  #     command: ["java", "-Dspring.application.name=restaurant-service", "-cp", "classes:resources:dependency/*", "com.example.demo.DemoApplication"]
+
+  #     restart: unless-stopped
+  #     networks: [microservice-net]
+
+  #   payment-service:
+  #     container_name: payment-service
+  #     image: eclipse-temurin:21-jre-alpine
+  #     ports:
+  #       - "8083:8080"
+  #     depends_on:
+  #       payment-db:
+  #         condition: service_healthy
+  #       kafka:
+  #         condition: service_started
+  #       discovery-server:
+  #         condition: service_started
+  #     environment:
+  #       # --- Kafka
+  #       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  #       # Producer (publish reply)
+  #       SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+  #       SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+  #       SPRING_KAFKA_PRODUCER_ACKS: all
+  #       SPRING_KAFKA_PRODUCER_RETRIES: 5
+  #       SPRING_KAFKA_PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE: "true"
+  #       SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION: 5
+  #       SPRING_KAFKA_PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS: 120000
+  #       # Consumer (nếu có listener khác)
+  #       SPRING_KAFKA_CONSUMER_GROUP_ID: payment-service-group
+  #       SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+  #       # --- Datasource
+  #       SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment_service_clean_architecture
+  #       SPRING_DATASOURCE_USERNAME: user
+  #       SPRING_DATASOURCE_PASSWORD: password
+  #       # --- Server
+  #       SERVER_PORT: 8080
+  #       SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+  #       MAIN_APP_CLASS: com.example.demo.DemoApplication
+  #       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+  #     volumes:
+  #       - ./payment-service/target/classes:/app/classes
+  #       - ./payment-service/src/main/resources:/app/resources
+  #       - ./payment-service/target/dependency:/app/dependency
+  #     working_dir: /app
+  #     command: ["java", "-Dspring.application.name=payment-service", "-cp", "classes:resources:dependency/*", "com.example.demo.DemoApplication"]
+  #     restart: unless-stopped
+  #     networks: [microservice-net]
+
+  #   user-service:
+  #     container_name: user-service
+  #     image: eclipse-temurin:21-jre-alpine
+  #     ports:
+  #       - "8084:8080"  # host:container
+  #     depends_on:
+  #       user-db:
+  #         condition: service_healthy
+  #       discovery-server:
+  #         condition: service_started
+  #     environment:
+  #       SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/user_service_clean_architecture
+  #       SPRING_DATASOURCE_USERNAME: user
+  #       SPRING_DATASOURCE_PASSWORD: password
+  #       SERVER_PORT: 8080
+  #     volumes:
+  #       - ./user-service/target/classes:/app/classes
+  #       - ./user-service/src/main/resources:/app/resources
+  #       - ./user-service/target/dependency:/app/dependency
+  #     working_dir: /app
+  #     command: ["java","-cp","classes:resources:dependency/*","com.example.user_service.UserServiceApplication"]
+  #     restart: unless-stopped
+  #     networks: [microservice-net]
+
+  #   zookeeper:
+  #     image: confluentinc/cp-zookeeper:7.5.0
+  #     container_name: zookeeper
+  #     environment:
+  #       ZOOKEEPER_CLIENT_PORT: 2181
+  #     ports:
+  #       - "2181:2181"
+  #     restart: unless-stopped
+  #     networks: [microservice-net]
+
+  #   kafka:
+  #     image: confluentinc/cp-kafka:7.5.0
+  #     container_name: kafka
+  #     depends_on:
+  #       - zookeeper
+  #     ports:
+  #       - "29092:29092"
+  #       - "9092:9092"
+  #     environment:
+  #       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+  #       KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
+  #       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
+  #       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+  #       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+  #       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  #       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+  #     restart: unless-stopped
+  #     networks: [microservice-net]
+
+  #   # kafka:
+  #   #   image: confluentinc/cp-kafka:7.5.0
+  #   #   container_name: kafka
+  #   #   hostname: kafka
+  #   #   ports:
+  #   #     - "9092:9092"
+  #   #   environment:
+  #   #     KAFKA_NODE_ID: 1
+  #   #     KAFKA_PROCESS_ROLES: broker,controller
+
+  #   #     # 1. KAFKA_LISTENERS: Định nghĩa tất cả các giao diện mà Kafka sẽ lắng nghe.
+  #   #     #    Sử dụng các tên Listener: INTERNAL, EXTERNAL, CONTROLLER.
+  #   #     KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+
+  #   #     # 2. KAFKA_ADVERTISED_LISTENERS: Định nghĩa địa chỉ mà client (các service khác) sẽ sử dụng để kết nối.
+  #   #     #    - INTERNAL: Sử dụng tên service 'kafka' và cổng 29092 (cho các service Docker nội bộ).
+  #   #     #    - EXTERNAL: Sử dụng 'localhost' và cổng 9092 (cho Host/máy tính của bạn).
+  #   #     KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+
+  #   #     # 3. KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: Ánh xạ tên Listener với giao thức bảo mật.
+  #   #     #    Phải khớp chính xác các tên trong KAFKA_LISTENERS và KAFKA_ADVERTISED_LISTENERS.
+  #   #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+
+  #   #     KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+  #   #     # 4. KAFKA_INTER_BROKER_LISTENER_NAME: Tên Listener dùng cho các broker/controller giao tiếp với nhau.
+  #   #     KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+
+  #   #     # KRaft Quorum
+  #   #     KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+  #   #     # Cấu hình dữ liệu
+  #   #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  #   #     KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+  #   #     KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+  #   #     KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+  #   #     KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+  #   #     KAFKA_LOG_RETENTION_HOURS: 168
+  #   #     KAFKA_LOG_SEGMENT_BYTES: 1073741824
+  #   #     KAFKA_LOG_DIRS: /var/lib/kafka/data
+  #   #     CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+  #   #   volumes:
+  #   #     - kafka-data:/var/lib/kafka/data
+  #   #   networks: [microservice-net]
+  #   #   restart: unless-stopped
+  #   #   healthcheck:
+  #   #     # Healthcheck dùng kết nối nội bộ (localhost:9092) bên trong container, nên nó hoạt động.
+  #   #     test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
+  #   #     interval: 10s
+  #   #     timeout: 5s
+  #   #     retries: 5
 
 
+
+  #   redis:
+  #     container_name: redis-clean-architecture
+  #     image: redis:7
+  #     ports:
+  #       - "6379:6379"
+  #     networks: [microservice-net]
+
+  # volumes:
+  #   order_db_data:
+  #   restaurant_db_data:
+  #   kafka-data:
+  #   payment_db_data:
+  #   user_db_data:
+
+
+
+  # networks:
+  #   microservice-net:
+  #     driver: bridge
 
 
 
 
 
-version: '3.8'
-
-services:
-  # -------------------- Monitoring --------------------
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml
-    command: ['--config.file=/etc/prometheus/prometheus.yml']
-    restart: unless-stopped
-    networks: [microservice-net]
-
-  # -------------------- Databases ---------------------
-  order-db:
-    image: postgres:15-alpine
-    container_name: order_db_container
-    environment:
-      POSTGRES_DB: order_service_clean_architecture
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-    ports:
-      - "5433:5432"
-    volumes:
-      - order_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d order_service_clean_architecture"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    networks: [microservice-net]
-
-  restaurant-db:
-    image: postgres:15-alpine
-    container_name: restaurant_db_container
-    environment:
-      POSTGRES_DB: restaurant_service_clean_architecture
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-    ports:
-      - "5434:5432"
-    volumes:
-      - restaurant_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d restaurant_service_clean_architecture"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    networks: [microservice-net]
-
-  user-db:
-    image: postgres:15-alpine
-    container_name: user_db_container
-    environment:
-      POSTGRES_DB: user_service_clean_architecture
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-    ports:
-      - "5436:5432"
-    volumes:
-      - user_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d user_service_clean_architecture"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    networks: [microservice-net]
-
-  payment-db:
-    image: postgres:15-alpine
-    container_name: payment_db_container
-    environment:
-      POSTGRES_DB: payment_service_clean_architecture
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-    ports:
-      - "5435:5432"
-    volumes:
-      - payment_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d payment_service_clean_architecture"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    networks: [microservice-net]
-
-  # -------------------- Infrastructure --------------------
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    container_name: zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-    ports:
-      - "2181:2181"
-    restart: unless-stopped
-    networks: [microservice-net]
-
-  kafka:
-    image: confluentinc/cp-kafka:7.5.0
-    container_name: kafka
-    depends_on:
-      - zookeeper
-    ports:
-      - "29092:29092"
-      - "9092:9092"
-    environment:
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-    restart: unless-stopped
-    networks: [microservice-net]
-
-  redis:
-    container_name: redis-clean-architecture
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    restart: unless-stopped
-    networks: [microservice-net]
-
-  discovery-server:
-    build:
-      context: .
-      dockerfile: discovery_eureka/Dockerfile
-    container_name: discovery-server
-    ports:
-      - "8761:8761"
-    environment:
-      SERVER_PORT: 8761
-      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
-      EUREKA_CLIENT_FETCH_REGISTRY: "false"
-    restart: unless-stopped
-    networks: [microservice-net]
 
 
-  api-gateway:
-    build:
-      context: .
-      dockerfile: api-gateway/Dockerfile
-    container_name: api-gateway
-    ports:
-      - "8079:8079"
-    depends_on:
-      discovery-server:
-        condition: service_healthy
-    volumes:
-      - ./api-gateway/src:/build/api-gateway/src
-      - ./api-gateway/target:/build/api-gateway/target
-      - ./api-gateway/pom.xml:/build/api-gateway/pom.xml
-    environment:
-      SERVER_PORT: 8079
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
-      SPRING_APPLICATION_NAME: api-gateway
-      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
-      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
-    restart: unless-stopped
-    networks: [microservice-net]
+  version: '3.8'
 
-  order-service:
-    build:
-      context: .
-      dockerfile: order-service/Dockerfile
-    container_name: order-service
-    ports:
-      - "8080:8080"
-    depends_on:
-      order-db:
-        condition: service_healthy
-      kafka:
-        condition: service_started
-      discovery-server:
-        condition: service_healthy
+  services:
+    # -------------------- Monitoring --------------------
+    prometheus:
+      image: prom/prometheus:latest
+      container_name: prometheus
+      ports:
+        - "9090:9090"
+      volumes:
+        - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+        - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+        - prom_data:/prometheus
+      command:
+        - --config.file=/etc/prometheus/prometheus.yml
+        - --storage.tsdb.path=/prometheus
+        - --web.enable-lifecycle
+      restart: unless-stopped
+      networks: [microservice-net]
 
-    volumes:
-      - ./order-service/src:/build/order-service/src
-      - ./order-service/target:/build/order-service/target
-      - ./order-service/pom.xml:/build/order-service/pom.xml
-    environment:
-      # Application
-      SPRING_APPLICATION_NAME: order-service
-      SERVER_PORT: 8080
-      # Eureka
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
-      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
-      # Database
-      SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/order_service_clean_architecture
-      SPRING_DATASOURCE_USERNAME: user
-      SPRING_DATASOURCE_PASSWORD: password
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      # Kafka
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
-      SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
-      SPRING_KAFKA_PRODUCER_ACKS: all
-      SPRING_KAFKA_PRODUCER_RETRIES: 5
-      SPRING_KAFKA_PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE: "true"
-      SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION: 5
-      SPRING_KAFKA_PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS: 120000
-      SPRING_KAFKA_CONSUMER_GROUP_ID: order-service-group
-      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
-      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
-      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
-    restart: unless-stopped
-    networks: [microservice-net]
+    alertmanager:
+      image: prom/alertmanager:latest
+      container_name: alertmanager
+      volumes:
+        - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      command: [ "--config.file=/etc/alertmanager/alertmanager.yml" ]
+      ports:
+        - "9093:9093"
+      restart: unless-stopped
+      networks: [ microservice-net ]
 
-  restaurant-service:
-    build:
-      context: .
-      dockerfile: restaurant-service/Dockerfile
-    container_name: restaurant-service
-    ports:
-      - "8081:8081"
-    depends_on:
-      restaurant-db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      kafka:
-        condition: service_started
-      discovery-server:
-        condition: service_healthy
-    volumes:
-      - ./restaurant-service/src:/build/restaurant-service/src
-      - ./restaurant-service/target:/build/restaurant-service/target
-      - ./restaurant-service/pom.xml:/build/restaurant-service/pom.xml
-    environment:
-      # Application
-      SPRING_APPLICATION_NAME: restaurant-service
-      SERVER_PORT: 8081
-      # Eureka
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
-      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
-      # Database
-      SPRING_DATASOURCE_URL: jdbc:postgresql://restaurant-db:5432/restaurant_service_clean_architecture
-      SPRING_DATASOURCE_USERNAME: user
-      SPRING_DATASOURCE_PASSWORD: password
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      # Redis
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      # Kafka
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
-      SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
-      SPRING_KAFKA_PRODUCER_ACKS: all
-      SPRING_KAFKA_PRODUCER_RETRIES: 5
-      SPRING_KAFKA_PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE: "true"
-      SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION: 5
-      SPRING_KAFKA_PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS: 120000
-      SPRING_KAFKA_CONSUMER_GROUP_ID: restaurant-service-group
-      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
-      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
-      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
-    restart: unless-stopped
-    networks: [microservice-net]
+    grafana:
+      image: grafana/grafana:11.0.0
+      container_name: grafana
+      ports:
+        - "3000:3000"
+      environment:
+        - GF_SECURITY_ADMIN_USER=admin
+        - GF_SECURITY_ADMIN_PASSWORD=admin
+        - GF_USERS_DEFAULT_THEME=light
+      volumes:
+        - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+        - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+        - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+        - grafana_data:/var/lib/grafana
+      depends_on:
+        - prometheus
+      restart: unless-stopped
+      networks: [ microservice-net ]
 
-  payment-service:
-    build:
-      context: .
-      dockerfile: payment-service/Dockerfile
-    container_name: payment-service
-    ports:
-      - "8083:8083"
-    depends_on:
-      payment-db:
-        condition: service_healthy
-      kafka:
-        condition: service_started
-      discovery-server:
-        condition: service_healthy
-    volumes:
-      - ./payment-service/src:/build/payment-service/src
-      - ./payment-service/target:/build/payment-service/target
-      - ./payment-service/pom.xml:/build/payment-service/pom.xml
-    environment:
-      # Application
-      SPRING_APPLICATION_NAME: payment-service
-      SERVER_PORT: 8083
-      # Eureka
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
-      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
-      # Database
-      SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment_service_clean_architecture
-      SPRING_DATASOURCE_USERNAME: user
-      SPRING_DATASOURCE_PASSWORD: password
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      # Kafka
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
-      SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
-      SPRING_KAFKA_PRODUCER_ACKS: all
-      SPRING_KAFKA_PRODUCER_RETRIES: 5
-      SPRING_KAFKA_PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE: "true"
-      SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION: 5
-      SPRING_KAFKA_PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS: 120000
-      SPRING_KAFKA_CONSUMER_GROUP_ID: payment-service-group
-      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
-      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
-      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
-    restart: unless-stopped
-    networks: [microservice-net]
 
-  user-service:
-    build:
-      context: .
-      dockerfile: user-service/Dockerfile
-    container_name: user-service
-    ports:
-      - "8082:8082"
-    depends_on:
-      user-db:
-        condition: service_healthy
-      discovery-server:
-        condition: service_healthy
-    volumes:
-      - ./user-service/src:/build/user-service/src
-      - ./user-service/target:/build/user-service/target
-      - ./user-service/pom.xml:/build/user-service/pom.xml
-    environment:
-      # Application
-      SPRING_APPLICATION_NAME: user-service
-      SERVER_PORT: 8082
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
-      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
-      SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/user_service_clean_architecture
-      SPRING_DATASOURCE_USERNAME: user
-      SPRING_DATASOURCE_PASSWORD: password
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
-      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
-    restart: unless-stopped
-    networks: [microservice-net]
+    # -------------------- Databases ---------------------
+    order-db:
+      image: postgres:15-alpine
+      container_name: order_db_container
+      environment:
+        POSTGRES_DB: order_service_clean_architecture
+        POSTGRES_USER: user
+        POSTGRES_PASSWORD: password
+      ports:
+        - "5433:5432"
+      volumes:
+        - order_db_data:/var/lib/postgresql/data
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U user -d order_service_clean_architecture"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+      restart: unless-stopped
+      networks: [microservice-net]
 
-volumes:
-  order_db_data:
-  restaurant_db_data:
-  payment_db_data:
-  user_db_data:
+    restaurant-db:
+      image: postgres:15-alpine
+      container_name: restaurant_db_container
+      environment:
+        POSTGRES_DB: restaurant_service_clean_architecture
+        POSTGRES_USER: user
+        POSTGRES_PASSWORD: password
+      ports:
+        - "5434:5432"
+      volumes:
+        - restaurant_db_data:/var/lib/postgresql/data
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U user -d restaurant_service_clean_architecture"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+      restart: unless-stopped
+      networks: [microservice-net]
 
-networks:
-  microservice-net:
-    driver: bridge
+    user-db:
+      image: postgres:15-alpine
+      container_name: user_db_container
+      environment:
+        POSTGRES_DB: user_service_clean_architecture
+        POSTGRES_USER: user
+        POSTGRES_PASSWORD: password
+      ports:
+        - "5436:5432"
+      volumes:
+        - user_db_data:/var/lib/postgresql/data
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U user -d user_service_clean_architecture"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+      restart: unless-stopped
+      networks: [microservice-net]
+
+    payment-db:
+      image: postgres:15-alpine
+      container_name: payment_db_container
+      environment:
+        POSTGRES_DB: payment_service_clean_architecture
+        POSTGRES_USER: user
+        POSTGRES_PASSWORD: password
+      ports:
+        - "5435:5432"
+      volumes:
+        - payment_db_data:/var/lib/postgresql/data
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U user -d payment_service_clean_architecture"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+      restart: unless-stopped
+      networks: [microservice-net]
+
+    # -------------------- Infrastructure --------------------
+    zookeeper:
+      image: confluentinc/cp-zookeeper:7.5.0
+      container_name: zookeeper
+      environment:
+        ZOOKEEPER_CLIENT_PORT: 2181
+      ports:
+        - "2181:2181"
+      restart: unless-stopped
+      networks: [microservice-net]
+
+    kafka:
+      image: confluentinc/cp-kafka:7.5.0
+      container_name: kafka
+      depends_on:
+        - zookeeper
+      ports:
+        - "29092:29092"
+        - "9092:9092"
+      environment:
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+        KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
+        KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+        KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      restart: unless-stopped
+      networks: [microservice-net]
+
+    redis:
+      container_name: redis-clean-architecture
+      image: redis:7-alpine
+      ports:
+        - "6379:6379"
+      restart: unless-stopped
+      networks: [microservice-net]
+
+    discovery-server:
+      build:
+        context: .
+        dockerfile: discovery_eureka/Dockerfile
+      container_name: discovery-server
+      ports:
+        - "8761:8761"
+      environment:
+        SERVER_PORT: 8761
+        EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
+        EUREKA_CLIENT_FETCH_REGISTRY: "false"
+      healthcheck:
+        test: [ "CMD-SHELL", "wget -qO- http://localhost:8761/ || exit 1" ]
+        interval: 10s
+        timeout: 5s
+        retries: 10
+        start_period: 20s
+      restart: unless-stopped
+      networks: [microservice-net]
+
+
+    api-gateway:
+      build:
+        context: .
+        dockerfile: api-gateway/Dockerfile
+      container_name: api-gateway
+      ports:
+        - "8079:8079"
+      depends_on:
+        discovery-server:
+          condition: service_healthy
+      volumes:
+        - ./api-gateway/src:/build/api-gateway/src
+        - ./api-gateway/target:/build/api-gateway/target
+        - ./api-gateway/pom.xml:/build/api-gateway/pom.xml
+      environment:
+        SERVER_PORT: 8079
+        EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+        SPRING_APPLICATION_NAME: api-gateway
+        SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+        SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      restart: unless-stopped
+      networks: [microservice-net]
+
+    order-service:
+      build:
+        context: .
+        dockerfile: order-service/Dockerfile
+      container_name: order-service
+      ports:
+        - "8080:8080"
+      depends_on:
+        order-db:
+          condition: service_healthy
+        kafka:
+          condition: service_started
+        discovery-server:
+          condition: service_healthy
+
+      volumes:
+        - ./order-service/src:/build/order-service/src
+        - ./order-service/target:/build/order-service/target
+        - ./order-service/pom.xml:/build/order-service/pom.xml
+      environment:
+        # Application
+        SPRING_APPLICATION_NAME: order-service
+        SERVER_PORT: 8080
+        # Eureka
+        EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+        EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+        # Database
+        SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/order_service_clean_architecture
+        SPRING_DATASOURCE_USERNAME: user
+        SPRING_DATASOURCE_PASSWORD: password
+        SPRING_JPA_HIBERNATE_DDL_AUTO: update
+        # Kafka
+        SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+        SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+        SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+        SPRING_KAFKA_PRODUCER_ACKS: all
+        SPRING_KAFKA_PRODUCER_RETRIES: 5
+        SPRING_KAFKA_PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE: "true"
+        SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION: 5
+        SPRING_KAFKA_PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS: 120000
+        SPRING_KAFKA_CONSUMER_GROUP_ID: order-service-group
+        SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+        SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+        SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      restart: unless-stopped
+      networks: [microservice-net]
+
+    restaurant-service:
+      build:
+        context: .
+        dockerfile: restaurant-service/Dockerfile
+      container_name: restaurant-service
+      ports:
+        - "8081:8081"
+      depends_on:
+        restaurant-db:
+          condition: service_healthy
+        redis:
+          condition: service_started
+        kafka:
+          condition: service_started
+        discovery-server:
+          condition: service_healthy
+      volumes:
+        - ./restaurant-service/src:/build/restaurant-service/src
+        - ./restaurant-service/target:/build/restaurant-service/target
+        - ./restaurant-service/pom.xml:/build/restaurant-service/pom.xml
+      environment:
+        # Application
+        SPRING_APPLICATION_NAME: restaurant-service
+        SERVER_PORT: 8081
+        # Eureka
+        EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+        EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+        # Database
+        SPRING_DATASOURCE_URL: jdbc:postgresql://restaurant-db:5432/restaurant_service_clean_architecture
+        SPRING_DATASOURCE_USERNAME: user
+        SPRING_DATASOURCE_PASSWORD: password
+        SPRING_JPA_HIBERNATE_DDL_AUTO: update
+        # Redis
+        SPRING_DATA_REDIS_HOST: redis
+        SPRING_DATA_REDIS_PORT: 6379
+        # Kafka
+        SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+        SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+        SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+        SPRING_KAFKA_PRODUCER_ACKS: all
+        SPRING_KAFKA_PRODUCER_RETRIES: 5
+        SPRING_KAFKA_PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE: "true"
+        SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION: 5
+        SPRING_KAFKA_PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS: 120000
+        SPRING_KAFKA_CONSUMER_GROUP_ID: restaurant-service-group
+        SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+        SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+        SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      restart: unless-stopped
+      networks: [microservice-net]
+
+    payment-service:
+      build:
+        context: .
+        dockerfile: payment-service/Dockerfile
+      container_name: payment-service
+      ports:
+        - "8083:8083"
+      depends_on:
+        payment-db:
+          condition: service_healthy
+        kafka:
+          condition: service_started
+        discovery-server:
+          condition: service_healthy
+      volumes:
+        - ./payment-service/src:/build/payment-service/src
+        - ./payment-service/target:/build/payment-service/target
+        - ./payment-service/pom.xml:/build/payment-service/pom.xml
+      environment:
+        # Application
+        SPRING_APPLICATION_NAME: payment-service
+        SERVER_PORT: 8083
+        # Eureka
+        EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+        EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+        # Database
+        SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment_service_clean_architecture
+        SPRING_DATASOURCE_USERNAME: user
+        SPRING_DATASOURCE_PASSWORD: password
+        SPRING_JPA_HIBERNATE_DDL_AUTO: update
+        # Kafka
+        SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+        SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+        SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+        SPRING_KAFKA_PRODUCER_ACKS: all
+        SPRING_KAFKA_PRODUCER_RETRIES: 5
+        SPRING_KAFKA_PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE: "true"
+        SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION: 5
+        SPRING_KAFKA_PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS: 120000
+        SPRING_KAFKA_CONSUMER_GROUP_ID: payment-service-group
+        SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+        SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+        SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      restart: unless-stopped
+      networks: [microservice-net]
+
+    user-service:
+      build:
+        context: .
+        dockerfile: user-service/Dockerfile
+      container_name: user-service
+      ports:
+        - "8082:8082"
+      depends_on:
+        user-db:
+          condition: service_healthy
+        discovery-server:
+          condition: service_healthy
+      volumes:
+        - ./user-service/src:/build/user-service/src
+        - ./user-service/target:/build/user-service/target
+        - ./user-service/pom.xml:/build/user-service/pom.xml
+      environment:
+        # Application
+        SPRING_APPLICATION_NAME: user-service
+        SERVER_PORT: 8082
+        EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+        EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+        SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/user_service_clean_architecture
+        SPRING_DATASOURCE_USERNAME: user
+        SPRING_DATASOURCE_PASSWORD: password
+        SPRING_JPA_HIBERNATE_DDL_AUTO: update
+        SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+        SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      restart: unless-stopped
+      networks: [microservice-net]
+
+  volumes:
+    prom_data:
+    grafana_data:
+    order_db_data:
+    restaurant_db_data:
+    payment_db_data:
+    user_db_data:
+
+  networks:
+    microservice-net:
+      driver: bridge

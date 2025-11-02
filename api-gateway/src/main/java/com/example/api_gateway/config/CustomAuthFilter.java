@@ -1,16 +1,11 @@
 package com.example.api_gateway.config;
 
-
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
-
 import lombok.RequiredArgsConstructor;
-
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,24 +20,35 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 public class CustomAuthFilter implements WebFilter, Ordered {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CustomAuthFilter.class);
+    private static final Logger log = LoggerFactory.getLogger(CustomAuthFilter.class);
 
-    @Value("${jwt.secret}")
+    @Value("${jwt.secret:}")
     private String jwtSecret;
 
-    // @Value("#{'${gateway.public.paths:}'.split(',')}")
-    // private List<String> publicPathsRaw;
+    // Cho phép các service nội bộ gọi qua header này (đã cấu hình trong routes)
+    @Value("${gateway.internal-token:secret-gateway-key}")
+    private String internalToken;
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
+    // WHITELIST các route public (login/register, docs, actuator, eureka…)
     private final List<String> publicPaths = List.of(
-        "/api/v1/auth/**",
-        "/api/v1/auth/register", // Thêm register rõ ràng
-        "/api/v1/auth/login"
+            "/api/v1/auth/**",
+            "/api/v1/auth/login",
+            "/api/v1/auth/register",
+            "/actuator/**",
+            "/eureka/**",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/webjars/**",
+            "/",
+            "/favicon.ico"
     );
 
     @Override
@@ -50,73 +56,83 @@ public class CustomAuthFilter implements WebFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
         HttpMethod method = request.getMethod();
-        
-      
-         if (HttpMethod.OPTIONS.equals(method)) {
-            System.out.println("22222222222222222222222222222222222222");
-            LOGGER.debug("Skipping authentication for OPTIONS request: {}", path);
-            return chain.filter(exchange); // Cho phép OPTIONS request đi qua ngay lập tức
-        }
 
+        // === LOG NHANH: xem có header Authorization/X-Internal-Token hay không
+        String auth = request.getHeaders().getFirst("Authorization");
+        String internalHdr = request.getHeaders().getFirst("X-Internal-Token");
+        String methodStr = (method != null ? method.name() : "UNKNOWN");
 
-        if (isPublicPath(path)) { 
+        log.debug("[GatewayAuth] {} {} | Authorization={} | X-Internal-Token={}",
+                methodStr,
+                path,
+                (auth == null ? "null" : (auth.length() > 30 ? auth.substring(0,30) + "..." : auth)),
+                internalHdr);
+
+        // 1) CORS preflight
+        if (HttpMethod.OPTIONS.equals(method)) {
             return chain.filter(exchange);
         }
 
-        System.out.println("fffffffffffffffffffffff" + request.getHeaders().getFirst("Authorization"));
-        final String authHeader = request.getHeaders().getFirst("Authorization");
+        // 2) Public paths
+        if (isPublicPath(path)) {
+            return chain.filter(exchange);
+        }
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            LOGGER.warn("Missing or malformed Authorization header for protected route: {}", path);
+        // 3) Nội bộ: cho phép nếu có X-Internal-Token khớp
+        if (internalHdr != null && internalHdr.equals(internalToken)) {
+            return chain.filter(exchange);
+        }
+
+        // 4) JWT
+        final String authHeader = auth; // dùng lại biến đã lấy bên trên
+        if (authHeader == null || !authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            log.debug("Missing/invalid Authorization on {}", path);
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
 
-        String token = authHeader.substring(7);
-        
+        String token = authHeader.substring(7).trim();
+
         try {
-            // Sử dụng thư viện com.auth0.jwt để giải mã và xác minh token
-            System.out.println("tffffffffffffffffffff" + jwtSecret);
+            if (jwtSecret == null || jwtSecret.isBlank()) {
+                log.error("jwt.secret is empty -> cannot verify JWT");
+                exchange.getResponse().setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
+                return exchange.getResponse().setComplete();
+            }
+
             Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
             JWTVerifier verifier = JWT.require(algorithm).build();
             DecodedJWT jwt = verifier.verify(token);
 
-            // Trích xuất thông tin từ payload của JWT
             String userId = jwt.getSubject();
-            System.out.println("userIIIIDDDDDDDĐ" + userId);
             String role = jwt.getClaim("role") != null ? jwt.getClaim("role").asString() : "";
-            System.out.println("roleeeeee" + role);
-            LOGGER.debug("Successfully authenticated user: {} with role: {}", userId, role);
 
-            // Thêm thông tin người dùng vào các header mới
-            ServerHttpRequest modifiedRequest = request.mutate()
+            log.debug("[GatewayAuth] Verified OK: subject={}, role={}", userId, role);
+
+            ServerHttpRequest modified = request.mutate()
                     .header("X-User-ID", userId != null ? userId : "")
-                    .header("X-User-Roles", role)
+                    .header("X-User-Roles", role != null ? role : "")
                     .build();
-            // Tiếp tục chuỗi filter
-            System.out.println("-------------------------------------");
-            return chain.filter(exchange.mutate().request(modifiedRequest).build());
+
+            return chain.filter(exchange.mutate().request(modified).build());
 
         } catch (JWTVerificationException e) {
-            LOGGER.warn("JWT Token validation failed for path {}: {}", path, e.getMessage());
+            log.warn("JWT verification failed on {}: {}", path, e.getMessage());
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         } catch (Exception e) {
-            LOGGER.error("An unexpected error occurred during JWT processing for path {}: {}", path, e.getMessage());
+            log.error("Unexpected JWT error on {}: {}", path, e.getMessage());
             exchange.getResponse().setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
             return exchange.getResponse().setComplete();
         }
     }
 
     private boolean isPublicPath(String requestPath) {
-    // Chỉ cần kiểm tra xem đường dẫn có khớp với bất kỳ pattern nào trong publicPaths không
-    return publicPaths.stream()
-        .anyMatch(pattern -> pathMatcher.match(pattern, requestPath));
+        return publicPaths.stream().anyMatch(p -> pathMatcher.match(p, requestPath));
     }
 
     @Override
     public int getOrder() {
-        return -1; // Đảm bảo filter này chạy trước các filter khác
+        return -1; // chạy sớm
     }
 }
-

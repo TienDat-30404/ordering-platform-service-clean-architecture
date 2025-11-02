@@ -64,11 +64,12 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${spring.application.instance_id:${server.port}}
-# management:
-#   endpoints:
-#     web:
-#       exposure:
-#         include: health,info,prometheus,metrics
-#   endpoint:
-#     prometheus:
-#       enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    prometheus:
+      enabled: true

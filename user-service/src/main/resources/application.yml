@@ -45,7 +45,16 @@ jwt:
     expiration: 3600000       # 1 giờ (ms)
   refreshToken:
     expiration: 604800000     # 7 ngày (ms)
-    
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    prometheus:
+      enabled: true
+
 server:
   port: 8082
 

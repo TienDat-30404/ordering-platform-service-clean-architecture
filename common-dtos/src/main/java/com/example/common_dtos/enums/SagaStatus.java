@@ -15,7 +15,8 @@ public enum SagaStatus {
     COMPENSATION_STARTED,        // alias cho đang rollback (tên mới)
     COMPENSATED,                 // rollback hoàn tất
     CANCELLED,                   // saga bị hủy
-    UNKNOWN;                     // trạng thái không xác định
+    UNKNOWN,
+    PREPARING;
 
     public boolean isTerminal() {
         return this == COMPLETED || this == CANCELLED || this == COMPENSATED;
