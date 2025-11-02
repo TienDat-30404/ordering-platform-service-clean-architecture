@@ -415,9 +415,13 @@
       ports:
         - "9090:9090"
       volumes:
-        - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-        - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml
-      command: ['--config.file=/etc/prometheus/prometheus.yml']
+        - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+        - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+        - prom_data:/prometheus
+      command:
+        - --config.file=/etc/prometheus/prometheus.yml
+        - --storage.tsdb.path=/prometheus
+        - --web.enable-lifecycle
       restart: unless-stopped
       networks: [microservice-net]
 
@@ -445,6 +449,7 @@
         - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
         - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
         - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+        - grafana_data:/var/lib/grafana
       depends_on:
         - prometheus
       restart: unless-stopped
@@ -577,6 +582,12 @@
         SERVER_PORT: 8761
         EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
         EUREKA_CLIENT_FETCH_REGISTRY: "false"
+      healthcheck:
+        test: [ "CMD-SHELL", "wget -qO- http://localhost:8761/ || exit 1" ]
+        interval: 10s
+        timeout: 5s
+        retries: 10
+        start_period: 20s
       restart: unless-stopped
       networks: [microservice-net]
 
@@ -780,6 +791,8 @@
       networks: [microservice-net]
 
   volumes:
+    prom_data:
+    grafana_data:
     order_db_data:
     restaurant_db_data:
     payment_db_data:

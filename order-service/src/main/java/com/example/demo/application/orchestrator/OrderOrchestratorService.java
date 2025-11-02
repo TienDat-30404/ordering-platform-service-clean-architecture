@@ -123,7 +123,7 @@ public class OrderOrchestratorService {
             log.error("[SAGA] publish AUTHORIZE_PAYMENT failed. orderId={} err={}", orderId, ex.toString(), ex);
         }
 
-        // 👉 Sau khi payment OK, ta mới gửi VALIDATE_MENU_ITEMS trong onReply(...)
+        //Sau khi payment OK, ta mới gửi VALIDATE_MENU_ITEMS trong onReply(...)
     }
 
     @KafkaListener(topics = Topics.ORDER_SAGA_REPLY, groupId = "order-service-group")
@@ -195,7 +195,12 @@ public class OrderOrchestratorService {
                     cancelOrder(orderId, "payment void/refund after invalid menu");
                 }
                 case "RESTAURANT_PREPARING" -> {
-                    log.info("[SAGA] Order {} PREPARING", orderId);
+                    try {
+                        updateOrderStatus.setStatus(orderId, OrderStatus.PREPARING);
+                    } catch (Exception ex) {
+                        log.warn("[SAGA] setStatus(PREPARING) failed. orderId={} err={}", orderId, ex.toString());
+                        return; // tùy bạn: có thể return để tránh bắn COMPLETE_ORDER khi DB chưa update
+                    }
                     callRestaurantCompleteOrder(rec, orderId);
                 }
                 case "RESTAURANT_COMPLETED" -> {

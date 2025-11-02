@@ -30,26 +30,44 @@ public class RestaurantDataProviderAdapter implements RestaurantDataProviderPort
         request.setMenuItemIds(productIds);
 
         try {
-            List<ItemValidationResponse> validationResponses = restaurantServiceApi.validateMenuItems(request);
-            return validationResponses.stream()
-                    .map(r -> {
-                        if (!r.isValid()) {
-                            throw new Order.OrderDomainException(
-                                    "Product ID " + r.getMenuItemId() + " validation failed.");
-                        }
-                        // map nguyên trạng
-                        return new ItemValidationResponse(
-                                r.getMenuItemId(), r.isValid(), r.getPrice(), r.getReason()
-                        );
-                    })
+            List<ItemValidationResponse> raw = restaurantServiceApi.validateMenuItems(request);
+
+            // Log trước khi quyết định
+            // (dùng log thực của bạn; đây là pseudo)
+            // log.info("[ORDER->RESTAURANT] validate req={} resp={}", productIds, raw);
+
+            if (raw == null) {
+                throw new Order.OrderDomainException("Restaurant validate returned null response");
+            }
+
+            // Gom item invalid (nếu có) rồi ném 1 lần cho rõ ràng
+            List<ItemValidationResponse> invalid = raw.stream()
+                    .filter(r -> !Boolean.TRUE.equals(r.isValid()))
                     .collect(Collectors.toList());
 
+            if (!invalid.isEmpty()) {
+                String detail = invalid.stream()
+                        .map(r -> "ID " + r.getMenuItemId() + (r.getReason() != null ? " ("+r.getReason()+")" : ""))
+                        .collect(Collectors.joining(", "));
+                throw new Order.OrderDomainException("Failed to validate items with Restaurant Service: " + detail);
+            }
+
+            // Map “nguyên trạng” như bạn muốn:
+            return raw.stream()
+                    .map(r -> new ItemValidationResponse(r.getMenuItemId(), r.isValid(), r.getPrice(), r.getReason()))
+                    .collect(Collectors.toList());
+
+        } catch (Order.OrderDomainException e) {
+            // ném lại giữ nguyên message rõ ràng
+            throw e;
         } catch (Exception e) {
-            throw new Order.OrderDomainException("Failed to validate items with Restaurant Service: " + e.getMessage());
+            throw new Order.OrderDomainException(
+                    "Failed to validate items with Restaurant Service: " + e.getMessage());
         }
     }
 
-    // ✅ NEW: phục vụ quoteTotal()
+
+    //NEW: phục vụ quoteTotal()
     @Override
     public List<ProductDetailData> getProducts(Long restaurantId, List<Long> productIds) {
         try {

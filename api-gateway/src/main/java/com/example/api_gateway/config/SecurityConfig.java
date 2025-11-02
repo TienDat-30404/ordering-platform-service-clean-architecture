@@ -15,14 +15,13 @@ public class SecurityConfig {
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)   // tắt Basic challenge
+                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)   // tắt form login
                 .authorizeExchange(ex -> ex
-                        //mở cho Prometheus / health
                         .pathMatchers("/actuator/**").permitAll()
                         .pathMatchers(HttpMethod.OPTIONS).permitAll()
-                        // các API khác tuỳ bạn: authenticated() hoặc permitAll()
-                        .anyExchange().authenticated()
+                        .anyExchange().permitAll()   // để CustomAuthFilter chịu trách nhiệm auth
                 )
-                // nếu bạn có JWT reactive filter thì .oauth2ResourceServer(...) hoặc addFilterHere
                 .build();
     }
 }

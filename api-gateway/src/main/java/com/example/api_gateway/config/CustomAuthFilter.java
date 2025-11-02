@@ -42,11 +42,8 @@ public class CustomAuthFilter implements WebFilter, Ordered {
             "/api/v1/auth/**",
             "/api/v1/auth/login",
             "/api/v1/auth/register",
-            // actuator/monitoring
             "/actuator/**",
-            // eureka dashboard/static (gateway có thể trả qua route/rewrite)
             "/eureka/**",
-            // openapi/swagger
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/webjars/**",
@@ -60,6 +57,17 @@ public class CustomAuthFilter implements WebFilter, Ordered {
         String path = request.getURI().getPath();
         HttpMethod method = request.getMethod();
 
+        // === LOG NHANH: xem có header Authorization/X-Internal-Token hay không
+        String auth = request.getHeaders().getFirst("Authorization");
+        String internalHdr = request.getHeaders().getFirst("X-Internal-Token");
+        String methodStr = (method != null ? method.name() : "UNKNOWN");
+
+        log.debug("[GatewayAuth] {} {} | Authorization={} | X-Internal-Token={}",
+                methodStr,
+                path,
+                (auth == null ? "null" : (auth.length() > 30 ? auth.substring(0,30) + "..." : auth)),
+                internalHdr);
+
         // 1) CORS preflight
         if (HttpMethod.OPTIONS.equals(method)) {
             return chain.filter(exchange);
@@ -71,13 +79,12 @@ public class CustomAuthFilter implements WebFilter, Ordered {
         }
 
         // 3) Nội bộ: cho phép nếu có X-Internal-Token khớp
-        String internalHdr = request.getHeaders().getFirst("X-Internal-Token");
         if (internalHdr != null && internalHdr.equals(internalToken)) {
             return chain.filter(exchange);
         }
 
         // 4) JWT
-        final String authHeader = request.getHeaders().getFirst("Authorization");
+        final String authHeader = auth; // dùng lại biến đã lấy bên trên
         if (authHeader == null || !authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
             log.debug("Missing/invalid Authorization on {}", path);
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
@@ -100,7 +107,8 @@ public class CustomAuthFilter implements WebFilter, Ordered {
             String userId = jwt.getSubject();
             String role = jwt.getClaim("role") != null ? jwt.getClaim("role").asString() : "";
 
-            // Propagate context to downstream services
+            log.debug("[GatewayAuth] Verified OK: subject={}, role={}", userId, role);
+
             ServerHttpRequest modified = request.mutate()
                     .header("X-User-ID", userId != null ? userId : "")
                     .header("X-User-Roles", role != null ? role : "")
