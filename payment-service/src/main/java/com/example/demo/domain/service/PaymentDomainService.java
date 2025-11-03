@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.demo.domain.entity.Payment;
 import com.example.demo.domain.valueobject.OrderId;
-import com.example.demo.domain.valueobject.PaymentStatus;
+import com.example.common_dtos.enums.PaymentStatus;
 import com.example.demo.domain.valueobject.UserId;
 
 @Service

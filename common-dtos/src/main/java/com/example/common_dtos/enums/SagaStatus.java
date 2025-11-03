@@ -12,6 +12,7 @@ public enum SagaStatus {
     PAYMENT_FAILED,              // Payment bị từ chối
     COMPLETED,                   // toàn bộ saga kết thúc thành công
     COMPENSATING,                // đang rollback
+    COMPENSATION_STARTED,        // alias cho đang rollback (tên mới)
     COMPENSATED,                 // rollback hoàn tất
     CANCELLED,                   // saga bị hủy
     UNKNOWN;                     // trạng thái không xác định

@@ -1,6 +1,7 @@
 package com.example.demo.adapters.out.persistence.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,14 +14,25 @@ import com.example.demo.adapters.out.persistence.entity.OrderJpaEntity;
 public interface OrderJpaRepository extends JpaRepository<OrderJpaEntity, Long> {
     List<OrderJpaEntity> findByUserId(Long userId);
 
-    @Query("SELECT " +
-            "  COUNT(o.id) AS totalOrders, " +
-            "  SUM(o.amount) AS totalRevenue, " +
-            "  AVG(o.amount) AS averageOrderValue " +
-            "FROM OrderJpaEntity o")
+    @Query("""
+           SELECT COUNT(o.id) AS totalOrders,
+                  SUM(o.amount) AS totalRevenue,
+                  AVG(o.amount) AS averageOrderValue
+           FROM OrderJpaEntity o
+           """)
     OrderStatisticsJpaProjection getOrderStatistics();
+
     @Modifying
     @Query("update OrderJpaEntity o set o.status = :status where o.id = :id")
-    int updateStatus(@Param("id") Long id, @Param("status") String status);
+    int updateStatus(@Param("id") Long id, @Param("status") String status); // nếu status là enum, dùng kiểu phù hợp
+
     OrderJpaEntity findByIdAndUserId(Long orderId, Long userId);
+
+    @Query("""
+       select distinct o
+       from OrderJpaEntity o
+       left join fetch o.items i
+       where o.id = :id
+       """)
+    Optional<OrderJpaEntity> findWithItemsById(@Param("id") Long id);
 }

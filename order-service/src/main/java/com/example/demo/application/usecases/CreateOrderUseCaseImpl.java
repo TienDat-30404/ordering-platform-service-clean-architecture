@@ -87,10 +87,14 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
                 // );
 
                 Order savedOrder = orderRepositoryPort.save(order);
+
+
+                List<Map<String, Object>> itemsPayload = orderMapper.toItemsPayload(savedOrder.getItems());
                 orderOrchestratorService.startCreateOrderSaga(
-                                savedOrder.getId().value(),
-                                savedOrder.getFinalPrice(),
-                                savedOrder.getUserId().value());
+                        savedOrder.getId().value().toString(),
+                        savedOrder.getRestaurantId().value().toString(),
+                        itemsPayload
+                );
 
                 // 6. Trả về Response
                 TrackOrderResponse response = orderMapper.toOrderDTO(savedOrder);
