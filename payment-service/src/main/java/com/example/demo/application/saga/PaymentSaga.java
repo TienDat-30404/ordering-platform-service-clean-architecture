@@ -224,10 +224,29 @@
 // /usr/bin/kafka-consumer-groups \
 // --bootstrap-server kafka:9092 \
 // --group payment-service-group \
-// --topic payment.command \
+// --topic payment.authorize.command \
 // --reset-offsets \
 // --to-latest \
 // --execute
+
+
+// /usr/bin/kafka-consumer-groups \
+// --bootstrap-server kafka:9092 \
+// --group restaurant-service-group \
+// --topic restaurant.fulfillment.command \
+// --reset-offsets \
+// --to-latest \
+// --execute
+
+
+// /usr/bin/kafka-consumer-groups \
+// --bootstrap-server kafka:9092 \
+// --group restaurant-service-group \
+// --topic restaurant.validate.command \
+// --reset-offsets \
+// --to-latest \
+// --execute
+
 
 
 

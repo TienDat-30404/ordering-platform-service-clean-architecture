@@ -1,0 +1,74 @@
+﻿spring:
+  application:
+    name: payment-service
+
+  kafka:
+    bootstrap-servers: kafka:9092
+    # consumer:
+    #   group-id: payment-service-group
+    #   auto-offset-reset: earliest
+    #   key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    #   value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    # producer:
+    #   key-serializer: org.apache.kafka.common.serialization.StringSerializer
+    #   value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+  
+        spring.json.add-type-headers: false # Thường không cần type header cho response DTO
+        spring.json.header-mapper: org.springframework.kafka.support.converter.Default  # <-- Đảm bảo Default Header Mapper được dùng
+
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      group-id: payment-service-group
+      auto-offset-reset: earliest
+  
+  datasource:
+    # url: jdbc:postgresql://localhost:5432/order_service_clean_architecture
+    url: jdbc:postgresql://payment-db:5432/payment_service_clean_architecture
+
+    username: postgres
+    password:
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update        # create, create-drop, update, none
+    show-sql: true            # log SQL ra console
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate.format_sql: true  # format SQL dễ đọc hơn
+
+server:
+  port: 8083
+
+logging:
+  level:
+    root: INFO
+    org.springframework.kafka: INFO
+    com.example.demo: DEBUG
+
+
+eureka:
+  client:
+    service-url:
+      # defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://discovery-server:8761/eureka/
+
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${server.port}}
+# management:
+#   endpoints:
+#     web:
+#       exposure:
+#         include: health,info,prometheus,metrics
+#   endpoint:
+#     prometheus:
+#       enabled: true

@@ -38,6 +38,7 @@ public class PaymentAuthorizeListener {
     @KafkaListener(topics = Topics.PAYMENT_AUTHORIZE_COMMAND, groupId = "payment-service-group")
     public void onAuthorize(ConsumerRecord<String, String> rec) throws Exception {
         String sagaId  = header(rec, "sagaId");
+        log.info("22222222222222222222222222222222222", "22trs");
         String replyTo = header(rec, "replyTo");
         if (replyTo == null || replyTo.isBlank()) replyTo = Topics.ORDER_SAGA_REPLY;
 
