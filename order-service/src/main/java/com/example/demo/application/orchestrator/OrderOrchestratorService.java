@@ -39,6 +39,7 @@ public class OrderOrchestratorService {
     private final ConfirmOrderPaidUseCase confirmOrderPaidUseCase;
     private final CanceledOrderUseCase canceledOrderUseCase;
     private final OrderRepositoryPort orderRepositoryPort;
+    private final java.util.Set<String> processedEvents = java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
     private final java.util.Map<String, java.util.List<java.util.Map<String,Object>>> pendingItems = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.Map<String, String> pendingRestaurant = new java.util.concurrent.ConcurrentHashMap<>();
     private final OrderRepositoryPort orderRepository;
@@ -89,7 +90,7 @@ public class OrderOrchestratorService {
         String sagaId = UUID.randomUUID().toString();
         String corrId = UUID.randomUUID().toString();
 
-        // ✅ TÍNH SỐ TIỀN TẠM TÍNH ĐỂ HOLD
+
         var amount = quoteTotal(restaurantId, itemsPayload);
 
         var env = SagaEnvelope.builder()
@@ -123,7 +124,7 @@ public class OrderOrchestratorService {
             log.error("[SAGA] publish AUTHORIZE_PAYMENT failed. orderId={} err={}", orderId, ex.toString(), ex);
         }
 
-        // 👉 Sau khi payment OK, ta mới gửi VALIDATE_MENU_ITEMS trong onReply(...)
+        //Sau khi payment OK, ta mới gửi VALIDATE_MENU_ITEMS trong onReply(...)
     }
 
     @KafkaListener(topics = Topics.ORDER_SAGA_REPLY, groupId = "order-service-group")
@@ -155,7 +156,6 @@ public class OrderOrchestratorService {
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(PAID) failed but skip re-consume. orderId={} err={}",
                                 orderId, ex.toString());
-                        return;
                     }
                     callRestaurantValidate(rec, orderId);
                 }
@@ -165,7 +165,6 @@ public class OrderOrchestratorService {
                         updateOrderStatus.setStatus(orderId, OrderStatus.CANCELLED);
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(CANCELLED) failed. orderId={} err={}", orderId, ex.toString());
-                        return;
                     }
                     cancelOrder(orderId, "payment failed");
                 }
@@ -175,7 +174,6 @@ public class OrderOrchestratorService {
                         updateOrderStatus.setStatus(orderId, OrderStatus.APPROVED);
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(APPROVED) failed. orderId={} err={}", orderId, ex.toString());
-                        return;
                     }
                     callRestaurantStartPreparation(rec, orderId);
                 }
@@ -186,7 +184,6 @@ public class OrderOrchestratorService {
                         updateOrderStatus.setStatus(orderId, OrderStatus.CANCELLING);
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(CANCELLING) failed. orderId={} err={}", orderId, ex.toString());
-                        return;
                     }
                 }
                 case "PAYMENT_REFUNDED", "PAYMENT_CANCELED" -> {
@@ -195,13 +192,15 @@ public class OrderOrchestratorService {
                         updateOrderStatus.setStatus(orderId, OrderStatus.CANCELLED);
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(CANCELLED) failed. orderId={} err={}", orderId, ex.toString());
-                        return;
                     }
                     cancelOrder(orderId, "payment void/refund after invalid menu");
                 }
                 case "RESTAURANT_PREPARING" -> {
-                    System.out.println("6666666666666666666666666666666666666666666666");
-                    log.info("[SAGA] Order {} PREPARING", orderId);
+                    try {
+                        updateOrderStatus.setStatus(orderId, OrderStatus.PREPARING);
+                    } catch (Exception ex) {
+                        log.warn("[SAGA] setStatus(PREPARING) failed. orderId={} err={}", orderId, ex.toString());
+                    }
                     callRestaurantCompleteOrder(rec, orderId);
                 }
                 case "RESTAURANT_COMPLETED" -> {
@@ -210,7 +209,6 @@ public class OrderOrchestratorService {
                         updateOrderStatus.setStatus(orderId, OrderStatus.COMPLETED);
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(COMPLETED) failed. orderId={} err={}", orderId, ex.toString());
-                        return;
                     }
                     callRestaurantDeductStock(rec, orderId);
                     confirmOrder(orderId);
@@ -435,7 +433,7 @@ public class OrderOrchestratorService {
                 .map(m -> Long.valueOf(String.valueOf(m.get("productId"))))
                 .toList();
 
-        // ✅ gọi port đã implement
+
         java.util.List<ProductDetailData> details =
                 restaurantData.getProducts(Long.valueOf(restaurantId), ids);
 
@@ -669,3 +667,4 @@ public class OrderOrchestratorService {
         return null; // không có cũng OK, payment-service đã có find-or-create
     }
 }
+

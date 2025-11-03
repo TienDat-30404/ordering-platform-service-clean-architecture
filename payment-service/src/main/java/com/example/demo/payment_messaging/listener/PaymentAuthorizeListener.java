@@ -14,6 +14,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -25,81 +28,109 @@ public class PaymentAuthorizeListener {
 
     private static final Logger log = LoggerFactory.getLogger(PaymentAuthorizeListener.class);
 
-    private final PaymentApplicationService paymentApplicationService; // <-- dùng use case mới
+    private final MeterRegistry meter;
+    private final PaymentApplicationService paymentApplicationService;
     private final PaymentReplyPublisher publisher;
     private final ObjectMapper om = new ObjectMapper();
 
-    public PaymentAuthorizeListener(PaymentApplicationService paymentApplicationService,
+    public PaymentAuthorizeListener(MeterRegistry meter,
+                                    PaymentApplicationService paymentApplicationService,
                                     PaymentReplyPublisher publisher) {
+        this.meter = meter;
         this.paymentApplicationService = paymentApplicationService;
         this.publisher = publisher;
     }
 
     @KafkaListener(topics = Topics.PAYMENT_AUTHORIZE_COMMAND, groupId = "payment-service-group")
     public void onAuthorize(ConsumerRecord<String, String> rec) throws Exception {
-        String sagaId  = header(rec, "sagaId");
-        log.info("22222222222222222222222222222222222", "22trs");
-        String replyTo = header(rec, "replyTo");
-        if (replyTo == null || replyTo.isBlank()) replyTo = Topics.ORDER_SAGA_REPLY;
+        // --- Metrics: consumed ---
+        Counter.builder("payment_authorize_messages_consumed_total")
+                .tag("topic", Topics.PAYMENT_AUTHORIZE_COMMAND)
+                .register(meter)
+                .increment();
 
-        // Header optional
-        String hdrPaymentId = header(rec, "paymentId");
-        String hdrUserId    = header(rec, "userId");
+        try {
+            String sagaId  = header(rec, "sagaId");
+            String replyTo = header(rec, "replyTo");
+            if (replyTo == null || replyTo.isBlank()) replyTo = Topics.ORDER_SAGA_REPLY;
 
-        JsonNode root = om.readTree(rec.value());
-        String orderIdStr = root.path("orderId").asText();
-        String amountStr  = root.path("payload").path("amount").asText("0");
+            // Header optional
+            String hdrPaymentId = header(rec, "paymentId");
+            String hdrUserId    = header(rec, "userId");
 
-        Long orderId  = safeLong(orderIdStr);
-        Long userId   = safeLong(hdrUserId);         // có thể null
-        Long paymentId= safeLong(hdrPaymentId);      // có thể null
-        BigDecimal amount = new BigDecimal(amountStr);
+            JsonNode root = om.readTree(rec.value());
+            String orderIdStr = root.path("orderId").asText();
+            String amountStr  = root.path("payload").path("amount").asText("0");
 
-        log.info("[PAYMENT] AUTHORIZE orderId={}, amount={}, sagaId={}, paymentId={}, userId={}, raw={}",
-                orderId, amount, sagaId, paymentId, userId, rec.value());
+            Long orderId   = safeLong(orderIdStr);
+            Long userId    = safeLong(hdrUserId);    // có thể null
+            Long paymentId = safeLong(hdrPaymentId); // có thể null
+            BigDecimal amount = new BigDecimal(amountStr);
 
-        // Gọi use case mới
-        PaymentResponseData resp = paymentApplicationService.authorizePayment(
-                new AuthorizePaymentCommand(orderId, userId, amount, paymentId)
-        );
+            // --- Metrics: amount distribution ---
+            DistributionSummary.builder("payment_authorize_amount")
+                    .baseUnit("VND") // thay bằng "USD" nếu hệ tiền tệ khác
+                    .register(meter)
+                    .record(amount.doubleValue());
 
-        String eventType = switch (resp.status()) {
-            case "AUTHORIZED" -> "PAYMENT_AUTHORIZED";
-            case "FAILED"     -> "PAYMENT_FAILED";
-            default           -> "PAYMENT_FAILED";
-        };
+            log.info("[PAYMENT] AUTHORIZE orderId={}, amount={}, sagaId={}, paymentId={}, userId={}, raw={}",
+                    orderId, amount, sagaId, paymentId, userId, rec.value());
 
-        Map<String, Object> payload = switch (eventType) {
-            case "PAYMENT_AUTHORIZED" -> Map.of(
-                    "orderId", String.valueOf(resp.orderId()),
-                    "transactionId", resp.transactionId(),
-                    "approvedAt", Instant.now().toString()
+            // Gọi use case mới
+            PaymentResponseData resp = paymentApplicationService.authorizePayment(
+                    new AuthorizePaymentCommand(orderId, userId, amount, paymentId)
             );
-            default -> Map.of(
+
+            String eventType = switch (resp.status()) {
+                case "AUTHORIZED" -> "PAYMENT_AUTHORIZED";
+                case "FAILED"     -> "PAYMENT_FAILED";
+                default           -> "PAYMENT_FAILED";
+            };
+
+            Map<String, Object> payload = switch (eventType) {
+                case "PAYMENT_AUTHORIZED" -> Map.of(
+                        "orderId", String.valueOf(resp.orderId()),
+                        "transactionId", resp.transactionId(),
+                        "approvedAt", Instant.now().toString()
+                );
+                default -> Map.of(
+                        "orderId", String.valueOf(resp.orderId()),
+                        "reason", resp.reason()
+                );
+            };
+
+            var envelope = Map.of(
+                    "eventType", eventType,
                     "orderId", String.valueOf(resp.orderId()),
-                    "reason", resp.reason()
+                    "payload", payload,
+                    "timestamp", Instant.now().toString()
             );
-        };
 
-        var envelope = Map.of(
-                "eventType", eventType,
-                "orderId", String.valueOf(resp.orderId()),
-                "payload", payload,
-                "timestamp", Instant.now().toString()
-        );
+            publisher.publish(
+                    replyTo,
+                    String.valueOf(resp.orderId()),
+                    om.writeValueAsString(envelope),
+                    Map.of(
+                            "sagaId", sagaId == null ? UUID.randomUUID().toString() : sagaId,
+                            "correlationId", UUID.randomUUID().toString(),
+                            "eventType", eventType
+                    )
+            );
 
-        publisher.publish(
-                replyTo,
-                String.valueOf(resp.orderId()),
-                om.writeValueAsString(envelope),
-                Map.of(
-                        "sagaId", sagaId == null ? UUID.randomUUID().toString() : sagaId,
-                        "correlationId", UUID.randomUUID().toString(),
-                        "eventType", eventType
-                )
-        );
+            // --- Metrics: reply status ---
+            Counter.builder("payment_authorize_reply_total")
+                    .tag("status", resp.status()) // AUTHORIZED/FAILED
+                    .register(meter)
+                    .increment();
 
-        log.info("[PAYMENT] Sent {} for orderId={} to {}", eventType, resp.orderId(), replyTo);
+            log.info("[PAYMENT] Sent {} for orderId={} to {}", eventType, resp.orderId(), replyTo);
+        } catch (Exception e) {
+            // --- Metrics: error path ---
+            Counter.builder("payment_authorize_errors_total")
+                    .register(meter)
+                    .increment();
+            throw e; // để Kafka error handler xử lý theo cấu hình
+        }
     }
 
     private static String header(ConsumerRecord<?,?> rec, String key) {
