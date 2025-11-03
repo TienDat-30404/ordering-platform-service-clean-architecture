@@ -1,118 +1,125 @@
-// package com.example.demo.application.usecases;
+package com.example.demo.application.usecases;
 
-// import static org.junit.jupiter.api.Assertions.*;
-// import static org.mockito.ArgumentMatchers.*;
-// import static org.mockito.Mockito.*;
-// import java.math.BigDecimal;
-// import java.util.Arrays;
-// import java.util.List;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 
-// import com.example.common_dtos.dto.ItemValidationResponse;
-// import com.example.demo.application.dto.command.CreateOrderCommand;
-// import com.example.demo.application.dto.command.CreateOrderItemCommand;
-// import com.example.demo.application.dto.output.TrackOrderResponse;
-// import com.example.demo.application.orchestrator.OrderOrchestratorService;
-// import com.example.demo.application.mapper.OrderMapper;
-// import com.example.demo.application.ports.output.external.RestaurantDataProviderPort;
-// import com.example.demo.application.ports.output.repository.OrderRepositoryPort;
-// import com.example.demo.domain.entity.Order;
-// import com.example.demo.domain.valueobject.order.OrderId;
-// import com.example.demo.domain.valueobject.user.UserId;
+import com.example.common_dtos.dto.ItemValidationResponse;
+import com.example.demo.application.dto.command.CreateOrderCommand;
+import com.example.demo.application.dto.command.CreateOrderItemCommand;
+import com.example.demo.application.dto.output.TrackOrderResponse;
+import com.example.demo.application.orchestrator.OrderOrchestratorService;
+import com.example.demo.application.mapper.OrderMapper;
+import com.example.demo.application.ports.output.external.RestaurantDataProviderPort;
+import com.example.demo.application.ports.output.repository.OrderRepositoryPort;
+import com.example.demo.domain.entity.Order;
+import com.example.demo.domain.entity.OrderItem;
+import com.example.demo.domain.valueobject.order.OrderId;
+import com.example.demo.domain.valueobject.order.RestaurantId;
+import com.example.demo.domain.valueobject.product.ProductId;
 
-// import org.junit.jupiter.api.BeforeEach;
-// import org.junit.jupiter.api.Test;
-// import org.junit.jupiter.api.extension.ExtendWith;
-// import org.mockito.Mock;
-// import org.mockito.junit.jupiter.MockitoExtension;
-// import org.springframework.test.util.ReflectionTestUtils;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-// @ExtendWith(MockitoExtension.class)
-// class CreateOrderUseCaseImplTest {
+@ExtendWith(MockitoExtension.class)
+class CreateOrderUseCaseImplTest {
 
-//   @Mock
-//   private OrderRepositoryPort orderRepositoryPort;
+  @Mock
+  private RestaurantDataProviderPort restaurantDataProviderPort;
 
-//   @Mock
-//   private OrderMapper orderMapper;
+  @Mock
+  private OrderRepositoryPort orderRepositoryPort;
 
-//   @Mock
-//   private RestaurantDataProviderPort restaurantDataProviderPort;
+  @Mock
+  private OrderMapper orderMapper;
 
-//   @Mock
-//   private OrderOrchestratorService orderOrchestratorService;
+  @Mock
+  private OrderOrchestratorService orderOrchestratorService;
 
-//   private CreateOrderUseCaseImpl useCase;
+  @InjectMocks
+  private CreateOrderUseCaseImpl useCase;
 
-//   @BeforeEach
-//   void setUp() {
-//     useCase = new CreateOrderUseCaseImpl(orderRepositoryPort, orderMapper, restaurantDataProviderPort, orderOrchestratorService);
-//   }
+  @Test
+  void createOrder_success_callsRepositoryAndOrchestrator() {
+    // --- ARRANGE ---
+    //  Tạo dữ liệu cho command
+    CreateOrderItemCommand item = new CreateOrderItemCommand();
+    item.setProductId(1L);
+    item.setQuantity(2);
 
-//   @Test
-//   void createOrder_success_callsRepositoryAndOrchestrator() {
-//     CreateOrderCommand command = mock(CreateOrderCommand.class);
-//     CreateOrderItemCommand item = mock(CreateOrderItemCommand.class);
+    CreateOrderCommand command = new CreateOrderCommand();
+    command.setRestaurantId(10L);
+    command.setItems(List.of(item));
 
-//     when(item.getProductId()).thenReturn(1L);
-//     when(item.getQuantity()).thenReturn(2);
-//     when(command.getItems()).thenReturn((List) Arrays.asList(item));
-//     when(command.getRestaurantId()).thenReturn(10L);
+    //  Mock external port: trả về danh sách sản phẩm hợp lệ
+    ItemValidationResponse validatedItem = new ItemValidationResponse();
+    validatedItem.setMenuItemId(1L);
+    validatedItem.setPrice(new BigDecimal("10.00"));
 
-//     ItemValidationResponse validated = mock(ItemValidationResponse.class);
-//     when(validated.getMenuItemId()).thenReturn(1L);
-//     when(validated.getPrice()).thenReturn(new BigDecimal("10.00"));
+    when(restaurantDataProviderPort.validateOrderCreation(eq(10L), anyList()))
+            .thenReturn(List.of(validatedItem));
 
-//     when(restaurantDataProviderPort.validateOrderCreation(eq(10L), anyList()))
-//         .thenReturn(Arrays.asList(validated));
+    //  Mock repository save()
+    Order mockSavedOrder = mock(Order.class);
+    when(mockSavedOrder.getId()).thenReturn(new OrderId(1L));
+    when(mockSavedOrder.getRestaurantId()).thenReturn(new RestaurantId(10L));
+    when(mockSavedOrder.getItems()).thenReturn(List.of(
+            OrderItem.createNew(new ProductId(1L), 2, new BigDecimal("10.00"))
+    ));
 
-//     Order savedOrder = mock(Order.class);
-//     System.out.println("savedđOrrdeerrrrrrrrrrrrrrrrr" + savedOrder);
-//     ReflectionTestUtils.setField(savedOrder, "id", new OrderId(1L));
-//     when(savedOrder.getId()).thenReturn(new OrderId(1L));
+    when(orderRepositoryPort.save(any(Order.class))).thenReturn(mockSavedOrder);
 
-//     when(orderRepositoryPort.save(any(Order.class))).thenReturn(savedOrder);
-//     when(savedOrder.getUserId()).thenReturn(new UserId(1L));
-//     when(savedOrder.getFinalPrice()).thenReturn(new BigDecimal("20.00")); // Ví dụ: Tổng giá 20.00 (2 items * 10.00)
-//     TrackOrderResponse dto = mock(TrackOrderResponse.class);
-//     when(orderMapper.toOrderDTO(savedOrder)).thenReturn(dto);
+    //  Mock mapper
+    List<Map<String, Object>> mockPayload = List.of(Map.of("productId", 12313212L, "quantity", 2));
+    when(orderMapper.toItemsPayload(anyList())).thenReturn(mockPayload);
 
-//     // Act
-//     // UserId userId = new UserId(1L);
-//     TrackOrderResponse result = useCase.createOrder(command,1L);  
+    TrackOrderResponse mockResponse = new TrackOrderResponse();
+    when(orderMapper.toOrderDTO(mockSavedOrder)).thenReturn(mockResponse);
 
-//     // Assert
-//     assertNotNull(result);
-//     verify(restaurantDataProviderPort, times(1)).validateOrderCreation(eq(10L), anyList());
-//     verify(orderRepositoryPort, times(1)).save(any(Order.class));
-//     verify(orderOrchestratorService, times(1)).startCreateOrderSaga(
-//         eq(1L), 
-//         eq(new BigDecimal("20.00")), 
-//         eq(1L) 
-//     );
-//     verify(orderMapper, times(1)).toOrderDTO(savedOrder);
-//   }
+    // --- ACT ---
+    TrackOrderResponse result = useCase.createOrder(command, 1L);
 
-//   @Test
-//   void createOrder_invalidQuantity_throwsDomainException() {
-//     // Arrange
-//     CreateOrderCommand command = mock(CreateOrderCommand.class);
-//     CreateOrderItemCommand item = mock(CreateOrderItemCommand.class);
+    // --- ASSERT ---
+    assertNotNull(result);
+    verify(restaurantDataProviderPort).validateOrderCreation(eq(10L), anyList());
+    verify(orderRepositoryPort).save(any(Order.class));
+    verify(orderMapper).toItemsPayload(anyList());
+    verify(orderOrchestratorService).startCreateOrderSaga(
+        eq("1"),  // savedOrder.getId().value().toString()
+        eq("10"), // savedOrder.getRestaurantId().value().toString()
+        eq(mockPayload)
+    );
+  }
 
-//     when(item.getProductId()).thenReturn(1L);
-//     when(item.getQuantity()).thenReturn(0); // invalid per domain rule
-//     when(command.getItems()).thenReturn((List) Arrays.asList(item));
-//     when(command.getRestaurantId()).thenReturn(10L);
+  @Test
+  void createOrder_invalidQuantity_throwsDomainException() {
+    // --- ARRANGE ---
+    CreateOrderItemCommand invalidItem = new CreateOrderItemCommand();
+    invalidItem.setProductId(1L);
+    invalidItem.setQuantity(0); // invalid per domain rule
 
-//     ItemValidationResponse validated = mock(ItemValidationResponse.class);
-//     when(validated.getMenuItemId()).thenReturn(1L);
-//     lenient().when(validated.getPrice()).thenReturn(new BigDecimal("10.00"));
+    CreateOrderCommand command = new CreateOrderCommand();
+    command.setRestaurantId(10L);
+    command.setItems(List.of(invalidItem));
 
-//     when(restaurantDataProviderPort.validateOrderCreation(eq(10L), anyList()))
-//         .thenReturn(Arrays.asList(validated));
+    ItemValidationResponse validated = new ItemValidationResponse();
+    validated.setMenuItemId(1L);
+    validated.setPrice(new BigDecimal("10.00"));
 
-//     // Act & Assert
-//     assertThrows(Order.OrderDomainException.class, () -> useCase.createOrder(command, 42L));
-//     verify(orderRepositoryPort, never()).save(any());
-//     verify(orderOrchestratorService, never()).startCreateOrderSaga(any(), any(BigDecimal.class), any());
-//   }
-// }
+    when(restaurantDataProviderPort.validateOrderCreation(eq(10L), anyList()))
+            .thenReturn(List.of(validated));
+
+    // --- ACT + ASSERT ---
+    assertThrows(Order.OrderDomainException.class,
+            () -> useCase.createOrder(command, 42L));
+
+    verify(orderRepositoryPort, never()).save(any());
+    verify(orderOrchestratorService, never()).startCreateOrderSaga(anyString(), anyString(), anyList());
+  }
+}
