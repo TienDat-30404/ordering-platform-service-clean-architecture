@@ -150,8 +150,10 @@ public class OrderOrchestratorService {
 
             switch (event) {
                 case "PAYMENT_AUTHORIZED" -> {
-                    System.out.println("11111111111111111111111111111111111111");
+                    System.out.println("2222222222222222222222222222222222222222222222");
                     try {
+                        System.out.println("orderIdddddddddddddddd" + orderId);
+                        System.out.println("orderStatusssssssssssssssss" + OrderStatus.PAID);
                         updateOrderStatus.setStatus(orderId, OrderStatus.PAID);
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(PAID) failed but skip re-consume. orderId={} err={}",
@@ -196,6 +198,7 @@ public class OrderOrchestratorService {
                     cancelOrder(orderId, "payment void/refund after invalid menu");
                 }
                 case "RESTAURANT_PREPARING" -> {
+                    System.out.println("333333333333333333333333333333333333333333");
                     try {
                         updateOrderStatus.setStatus(orderId, OrderStatus.PREPARING);
                     } catch (Exception ex) {
