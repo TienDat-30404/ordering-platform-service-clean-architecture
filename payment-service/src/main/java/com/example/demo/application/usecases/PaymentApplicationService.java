@@ -9,7 +9,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Timer;
 
 import com.example.common_dtos.dto.PaymentResponseData;
-import com.example.common_dtos.enums.PaymentStatus;
+import com.example.demo.domain.valueobject.PaymentStatus;
 import com.example.demo.application.dto.command.AuthorizePaymentCommand;
 import com.example.demo.application.dto.command.RefundPaymentCommand;
 import com.example.demo.application.ports.output.repository.PaymentRepository;

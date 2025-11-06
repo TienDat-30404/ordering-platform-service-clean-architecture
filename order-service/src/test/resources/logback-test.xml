@@ -1,0 +1,22 @@
+<configuration>
+    <property name="PATTERN" value="[%d{HH:mm:ss.SSS}] %-5level %-30.30logger{30} %msg%n"/>
+
+    <!-- Cut noise -->
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.apache.kafka" level="WARN"/>
+    <logger name="org.hibernate.SQL" level="WARN"/>
+    <logger name="org.hibernate.type.descriptor.sql" level="WARN"/>
+
+    <!-- Keep your stuff -->
+    <logger name="com.example.demo.application.orchestrator" level="INFO"/>
+    <logger name="com.example.demo.adapters.out.persistence" level="INFO"/>
+    <logger name="com.example.demo.order_messaging" level="INFO"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder><pattern>${PATTERN}</pattern></encoder>
+    </appender>
+
+    <root level="WARN">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

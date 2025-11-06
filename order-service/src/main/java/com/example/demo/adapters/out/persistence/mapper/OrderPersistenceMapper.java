@@ -6,7 +6,7 @@ import com.example.demo.domain.entity.Order;
 import com.example.demo.domain.entity.OrderItem;
 import com.example.demo.domain.valueobject.order.OrderId;
 import com.example.demo.domain.valueobject.order.OrderItemId;
-import com.example.common_dtos.enums.OrderStatus;
+import com.example.demo.domain.valueobject.order.OrderStatus;
 import com.example.demo.domain.valueobject.order.RestaurantId;
 import com.example.demo.domain.valueobject.product.ProductId;
 import com.example.demo.domain.valueobject.user.UserId;

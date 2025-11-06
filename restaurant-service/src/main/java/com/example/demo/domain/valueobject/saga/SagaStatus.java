@@ -1,4 +1,4 @@
-package com.example.common_dtos.enums;
+package com.example.demo.domain.valueobject.saga;
 
 /**
  * Đại diện trạng thái tiến trình Saga orchestration toàn hệ thống.

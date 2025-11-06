@@ -1,4 +1,4 @@
-package com.example.common_dtos.enums;
+package com.example.demo.domain.valueobject;
 
 /**
  * Trạng thái giao dịch thanh toán dùng chung cho toàn hệ thống.
