@@ -59,9 +59,10 @@ public class CustomAuthFilter implements WebFilter, Ordered {
 
         // === LOG NHANH: xem có header Authorization/X-Internal-Token hay không
         String auth = request.getHeaders().getFirst("Authorization");
-        String internalHdr = request.getHeaders().getFirst("X-Internal-Token");
+        String internalHdr = request.getHeaders().getFirst("X-Internal-Tokehuhhjn");
         String methodStr = (method != null ? method.name() : "UNKNOWN");
-
+        System.out.println("internalTokennnnnnnnnnnnnnnnnnnnnnn" + internalToken);
+        System.out.println("internalHdrrrrrrrrrrrrrrrrrrrr" + internalHdr);
         log.debug("[GatewayAuth] {} {} | Authorization={} | X-Internal-Token={}",
                 methodStr,
                 path,
@@ -82,7 +83,7 @@ public class CustomAuthFilter implements WebFilter, Ordered {
         if (internalHdr != null && internalHdr.equals(internalToken)) {
             return chain.filter(exchange);
         }
-
+     
         // 4) JWT
         final String authHeader = auth; // dùng lại biến đã lấy bên trên
         if (authHeader == null || !authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {

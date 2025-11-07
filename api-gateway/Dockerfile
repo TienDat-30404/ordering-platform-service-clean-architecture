@@ -30,4 +30,4 @@ EXPOSE 8079
 # <CHANGE> Chạy với mvn spring-boot:run để hỗ trợ hot reload
 ENV MAVEN_OPTS="-Dspring-boot.run.fork=false"
 WORKDIR /build/api-gateway
-CMD ["mvn", "spring-boot:run"]
+CMD ["mvn", "spring-boot:run"]  
