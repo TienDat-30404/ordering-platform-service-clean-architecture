@@ -1,0 +1,11 @@
+spring:
+  cloud:
+    service-registry:
+      auto-registration:
+        enabled: false # Ngăn service tự đăng ký với Eureka
+    discovery:
+      enabled: false # Ngăn service cố gắng tìm các service khác
+
+eureka:
+  client:
+    enabled: false # Tắt hoàn toàn Eureka client
