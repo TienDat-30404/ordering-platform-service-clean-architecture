@@ -8,7 +8,7 @@ import com.example.demo.application.dto.saga.AuthorizePaymentCommandData;
 import com.example.demo.application.ports.input.CanceledOrderUseCase;
 import com.example.demo.application.ports.input.ConfirmOrderPaidUseCase;
 import com.example.demo.application.ports.input.UpdateOrderStatusUseCase;
-import com.example.common_dtos.enums.OrderStatus;
+import com.example.demo.domain.valueobject.order.OrderStatus;
 import com.example.demo.application.dto.command.CreateOrderItemCommand;
 import com.example.demo.application.ports.output.OrderPublisher.OrderEventPublisher;
 import com.example.demo.domain.entity.Order;
@@ -28,7 +28,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.example.common_dtos.enums.SagaStatus;
+import com.example.demo.domain.valueobject.saga.SagaStatus;
 import com.example.common_dtos.enums.Topics;
 
 @Slf4j
@@ -47,6 +47,9 @@ public class OrderOrchestratorService {
     private final UpdateOrderStatusUseCase updateOrderStatus;
     private final OrderEventPublisher publisher;
     private final ObjectMapper om = new ObjectMapper();
+
+    // === NEW: track saga đang active cho từng orderId để lọc reply “dư âm” ===
+    private final java.util.concurrent.ConcurrentHashMap<String, String> activeSagaByOrder = new java.util.concurrent.ConcurrentHashMap<>();
 
     // ===== Controller có thể truyền Long hoặc String =====
     public void startCreateOrderSagaFromCommand(String orderId,
@@ -87,10 +90,12 @@ public class OrderOrchestratorService {
         // validate input như cũ...
         pendingItems.put(orderId, itemsPayload);
         pendingRestaurant.put(orderId, restaurantId);
+
+        // NEW: tao sagaId và ghi nhận “active”
         String sagaId = UUID.randomUUID().toString();
+        activeSagaByOrder.put(orderId, sagaId);
+
         String corrId = UUID.randomUUID().toString();
-
-
         var amount = quoteTotal(restaurantId, itemsPayload);
 
         var env = SagaEnvelope.builder()
@@ -144,6 +149,25 @@ public class OrderOrchestratorService {
                 return;
             }
 
+            // === NEW FILTER LAYER 1: key phải khớp orderId ===
+            String recordKey = rec.key();
+            if (recordKey != null && !recordKey.equals(orderId)) {
+                log.warn("[SAGA] Ignore reply: record.key={} != orderId={} (eventType={})", recordKey, orderId, event);
+                return;
+            }
+
+            // === NEW FILTER LAYER 2: sagaId header phải khớp saga đang active ===
+            String expected = activeSagaByOrder.get(orderId);
+            if (expected == null) {
+                log.warn("[SAGA] Ignore reply: no active saga for orderId={}, headerSaga={}, eventType={}", orderId, sagaId, event);
+                return;
+            }
+            if (sagaId == null || !expected.equals(sagaId)) {
+                log.warn("[SAGA] Ignore reply: mismatched sagaId for orderId={} expected={} actual={} (eventType={})",
+                        orderId, expected, sagaId, event);
+                return;
+            }
+
             SagaStatus sagaStatus = mapEventToSagaStatus(event);
             log.info("[SAGA<-REPLY] eventType={} sagaStatus={} sagaId={} orderId={} raw={}",
                     event, sagaStatus, sagaId, orderId, rec.value());
@@ -161,13 +185,16 @@ public class OrderOrchestratorService {
                     }
                     callRestaurantValidate(rec, orderId);
                 }
-                case "PAYMENT_FAILED" -> {
+                case "PAYMENT_FAILED" ->    {
                     try {
                         updateOrderStatus.setStatus(orderId, OrderStatus.CANCELLED);
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(CANCELLED) failed. orderId={} err={}", orderId, ex.toString());
                     }
                     cancelOrder(orderId, "payment failed");
+                    // NEW: terminal → cleanup
+                    activeSagaByOrder.remove(orderId);
+                    clearPending(orderId);
                 }
                 case "RESTAURANT_ITEMS_VALIDATED" -> {
                     try {
@@ -178,12 +205,12 @@ public class OrderOrchestratorService {
                     callRestaurantStartPreparation(rec, orderId);
                 }
                 case "RESTAURANT_ITEMS_INVALID" -> {
-                    callPaymentCancel(rec, orderId, "menu invalid");
                     try {
                         updateOrderStatus.setStatus(orderId, OrderStatus.CANCELLING);
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(CANCELLING) failed. orderId={} err={}", orderId, ex.toString());
                     }
+                    callPaymentCancel(rec, orderId, "menu invalid");
                 }
                 case "PAYMENT_REFUNDED", "PAYMENT_CANCELED" -> {
                     try {
@@ -192,6 +219,9 @@ public class OrderOrchestratorService {
                         log.warn("[SAGA] setStatus(CANCELLED) failed. orderId={} err={}", orderId, ex.toString());
                     }
                     cancelOrder(orderId, "payment void/refund after invalid menu");
+                    // NEW: terminal → cleanup
+                    activeSagaByOrder.remove(orderId);
+                    clearPending(orderId);
                 }
                 case "RESTAURANT_PREPARING" -> {
                     System.out.println("333333333333333333333333333333333333333333");
@@ -210,6 +240,8 @@ public class OrderOrchestratorService {
                     }
                     callRestaurantDeductStock(rec, orderId);
                     confirmOrder(orderId);
+                    // Chưa remove ở đây vì còn chờ DEDUCT_STOCK (nếu bạn muốn kết thúc tại đây thì bỏ comment dòng dưới)
+                    // activeSagaByOrder.remove(orderId);
                 }
                 default -> {
                     log.warn("[SAGA] Unknown eventType={} for orderId={}, skip.", event, orderId);
@@ -431,7 +463,6 @@ public class OrderOrchestratorService {
                 .map(m -> Long.valueOf(String.valueOf(m.get("productId"))))
                 .toList();
 
-
         java.util.List<ProductDetailData> details =
                 restaurantData.getProducts(Long.valueOf(restaurantId), ids);
 
@@ -561,6 +592,8 @@ public class OrderOrchestratorService {
 
             // sau khi deduct thì có thể clear cache tạm
             clearPending(orderId);
+            // NEW: có thể coi như xong vòng đời
+            activeSagaByOrder.remove(orderId);
         } catch (Throwable ex) {
             log.error("[SAGA] callRestaurantDeductStock failed for orderId={} err={}", orderId, ex.toString(), ex);
         }
@@ -665,4 +698,3 @@ public class OrderOrchestratorService {
         return null; // không có cũng OK, payment-service đã có find-or-create
     }
 }
-

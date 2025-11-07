@@ -22,7 +22,7 @@ public class StripePaymentGateway implements PaymentGateway {
 
            // Generate transaction ID
            String transactionId = "txn_" + UUID.randomUUID().toString();
-           // String transactionId = null;
+           //String transactionId = null;
 
            log.info("Payment authorized with transaction ID: {}", transactionId);
            return transactionId;

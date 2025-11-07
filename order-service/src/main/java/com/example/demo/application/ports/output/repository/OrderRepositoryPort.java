@@ -5,7 +5,7 @@ import java.util.List;
 import com.example.demo.domain.entity.Order;
 import com.example.demo.domain.valueobject.order.OrderId;
 import com.example.demo.domain.valueobject.order.OrderStatistics;
-import com.example.common_dtos.enums.OrderStatus;
+import com.example.demo.domain.valueobject.order.OrderStatus;
 import com.example.demo.domain.valueobject.user.UserId;
 
 
