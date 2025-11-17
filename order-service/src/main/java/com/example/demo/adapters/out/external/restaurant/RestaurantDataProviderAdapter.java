@@ -96,7 +96,7 @@ public class RestaurantDataProviderAdapter implements RestaurantDataProviderPort
                             res -> new ProductDetailData(
                                     res.getId(),
                                     res.getName(),
-                                    res.getPrice() // ✅ đừng quên set price ở map cũ
+                                    res.getPrice() 
                             )
                     ));
         } catch (Exception e) {

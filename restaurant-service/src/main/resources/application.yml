@@ -14,7 +14,7 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
     # Nếu chạy local, bạn có thể đổi:
-    # bootstrap-servers: localhost:9092
+    # bootstrap-servers: localhost:9092 
 
   datasource:
     url: jdbc:postgresql://restaurant-db:5432/restaurant_service_clean_architecture

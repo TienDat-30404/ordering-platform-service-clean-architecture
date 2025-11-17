@@ -15,12 +15,12 @@ public class SecurityConfig {
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)   // tắt Basic challenge
-                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)   // tắt form login
+                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable) // tắt Basic challenge
+                .formLogin(ServerHttpSecurity.FormLoginSpec::disable) // tắt form login
                 .authorizeExchange(ex -> ex
                         .pathMatchers("/actuator/**").permitAll()
                         .pathMatchers(HttpMethod.OPTIONS).permitAll()
-                        .anyExchange().permitAll()   // để CustomAuthFilter chịu trách nhiệm auth
+                        .anyExchange().permitAll() // để CustomAuthFilter chịu trách nhiệm auth
                 )
                 .build();
     }

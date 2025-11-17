@@ -16,27 +16,27 @@ scrape_configs:
     static_configs:
       - targets: ['order-service:8080']
 
-  - job_name: 'restaurant-service'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['restaurant-service:8081']
+  # - job_name: 'restaurant-service'
+  #   metrics_path: '/actuator/prometheus'
+  #   static_configs:
+  #     - targets: ['restaurant-service:8081']
 
-  - job_name: 'payment-service'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['payment-service:8083']
+  # - job_name: 'payment-service'
+  #   metrics_path: '/actuator/prometheus'
+  #   static_configs:
+  #     - targets: ['payment-service:8083']
 
-  - job_name: 'user-service'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['user-service:8082']
+  # - job_name: 'user-service'
+  #   metrics_path: '/actuator/prometheus'
+  #   static_configs:
+  #     - targets: ['user-service:8082']
 
-  - job_name: 'api-gateway'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['api-gateway:8079']
+  # - job_name: 'api-gateway'
+  #   metrics_path: '/actuator/prometheus'
+  #   static_configs:
+  #     - targets: ['api-gateway:8079']
 
-  - job_name: 'eureka'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['discovery-server:8761']
+  # - job_name: 'eureka'
+  #   metrics_path: '/actuator/prometheus'
+  #   static_configs:
+  #     - targets: ['discovery-server:8761']

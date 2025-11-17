@@ -1,0 +1,36 @@
+spring:
+  main:
+    banner-mode: off
+  datasource:
+    url: jdbc:postgresql://localhost:5433/order_service_clean_architecture   # đúng port map của order-db
+    username: user
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+  kafka:
+    listener:
+      concurrency: 1
+    bootstrap-servers: localhost:29092       # đúng port map của kafka
+    consumer:
+      auto-offset-reset: earliest
+    properties:
+      allow.auto.create.topics: true
+
+eureka:
+  client:
+    enabled: false   # tránh test phụ thuộc Eureka
+
+logging:
+  level:
+    root: WARN
+    com.example.demo.application.orchestrator: WARN
+    com.example.demo.adapters.out.persistence: off
+    org.springframework: off
+    org.apache.kafka: off
+    org.hibernate.SQL: OFF
+    org.hibernate.type.descriptor.sql: OFF
+    org.hibernate.orm.jdbc.bind: OFF
+    org.hibernate.engine.jdbc.spi.SqlStatementLogger: OFF

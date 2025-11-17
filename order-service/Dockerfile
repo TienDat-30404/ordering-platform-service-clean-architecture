@@ -1,4 +1,4 @@
-# GIAI ĐOẠN 1: BUILDER
+# # GIAI ĐOẠN 1: BUILDER
 FROM maven:3.9-eclipse-temurin-21 AS builder 
 
 WORKDIR /build
@@ -31,3 +31,44 @@ EXPOSE 8080
 ENV MAVEN_OPTS="-Dspring-boot.run.fork=false"
 WORKDIR /build/order-service
 CMD ["mvn", "spring-boot:run"]
+
+
+
+
+
+
+
+
+
+
+
+
+
+# GIAI ĐOẠN 1: BUILDER (Dùng để biên dịch)
+# FROM maven:3.9-eclipse-temurin-21 AS builder 
+# WORKDIR /build
+
+# COPY pom.xml ./
+
+# COPY order-service ./order-service
+# COPY common-dtos ./common-dtos 
+
+# RUN mvn install -N -B 
+
+# RUN cd common-dtos && \ 
+#     mvn install -DskipTests -B
+# RUN cd order-service && \
+#     mvn clean package -am -DskipTests -B
+# # ----------------------------------------------------
+
+# # GIAI ĐOẠN 2: RUNTIME (Production Optimized)
+# FROM eclipse-temurin:21-jre-alpine
+
+# # Thiết lập thư mục làm việc
+# WORKDIR /app
+
+# COPY --from=builder /build/order-service/target/*.jar app.jar
+
+# EXPOSE 8080
+
+# ENTRYPOINT ["java", "-jar", "app.jar"]

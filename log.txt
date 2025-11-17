@@ -1,0 +1,18 @@
+-prometheus : 
+
+up{job="order-service"}     
+rate(http_server_requests_seconds_count{job="order-service"}[1m]) 
+
+sum(orders_total{status="PAYMENT_AUTHORIZED"})
+sum(rate(orders_total{job="order-service", status="PAYMENT_AUTHORIZED"}[5m]))
+
+sum(orders_total{status="PAYMENT_FAILED"})
+sum(rate(orders_total{job="order-service", status="PAYMENT_FAILED"}[5m]))
+
+sum(orders_total{status="REFUNDED"})
+sum(rate(orders_total{job="order-service", status="REFUNDED"}[5m]))
+
+sum(orders_total{status="COMPLETED"})
+sum(rate(orders_total{job="order-service", status="COMPLETED"}[5m]))
+
+

@@ -23,13 +23,9 @@ public class RestaurantRepositoryAdapter implements RestaurantRepositoryPort {
     @Override
     @Cacheable(value = "restaurant", key = "#id.value()")
     public Optional<Restaurant> findById(RestaurantId id) {
-        // System.out.println("Idddddddddddddddddddddddddd" + id);
-        // return repository.findById(id.value())
-        //         .map(mapper::toDomainRestaurant);
-        // // .orElseThrow(() -> new Restaurant.OrderDomainException(d
-        // // "Order with ID " + orderId + " not found."));
+        System.out.println("------------------------------------- Cache hit ----------------------------------------");
         Long pk = id.value();                  // record -> value()
-        return repo.findByIdWithMenu(pk)       // ✅ BẮT BUỘC dùng method này
+        return repo.findByIdWithMenu(pk)       // ✅ BẮT BUỘC dùng met hod này
                 .map(mapper::toDomainRestaurant);
     }
 }

@@ -58,9 +58,9 @@ public class MenuItemRepositoryAdapter implements MenuItemRepositoryPort {
     private final MenuItemPersistenceMapper mapper;
     
     @Override
-    // @Cacheable(value = "menuItems", key = "#menuItemIds.hasCode()")
+    @Cacheable(value = "menuItems", key = "#menuItemIds.toString()")
     public List<MenuItem> findAllById(List<Long> menuItemIds) {
-        System.out.println("menu item wrapper");
+        System.out.println("Cache hit");
         return menuItemJpaRepository.findAllById(menuItemIds)
                 .stream()
                 .map(mapper::toDomainEntity)

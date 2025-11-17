@@ -2,6 +2,8 @@ package com.example.user_service.application.usecases;
 
 import java.security.InvalidAlgorithmParameterException;
 
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.user_service.application.dto.command.LoginCommand;
@@ -22,6 +24,7 @@ public class LoginUseCaseImpl implements LoginUseCase {
     private final UserRepositoryPort userRepositoryPort;
     private final UserMapper userMapper;
     private final TokenGeneratorPort tokenGenerator; 
+    private final PasswordEncoder passwordEncoder;
 
     public AuthResponse<UserResponse> login(LoginCommand command) {
 
@@ -31,10 +34,10 @@ public class LoginUseCaseImpl implements LoginUseCase {
         User user = userRepositoryPort.findByUserName(userName)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        // if (!password.equals(user.getPassword())) {
-        //     // Nếu hai chuỗi KHÔNG khớp nhau
-        //     throw new InvalidAlgorithmParameterException("Mật khẩu không hợp lệ");
-        // }
+   
+         if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new BadCredentialsException("Mật khẩu không hợp lệ");
+        }
         UserResponse response = userMapper.toDTO(user);
 
         String accessToken = tokenGenerator.generateAccessToken(user.getId().value(), user.getRole().getName());

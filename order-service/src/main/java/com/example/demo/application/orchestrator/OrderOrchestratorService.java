@@ -3,12 +3,13 @@ package com.example.demo.application.orchestrator;
 import com.example.common_dtos.dto.PaymentResponseData;
 import com.example.demo.application.ports.output.repository.OrderRepositoryPort;
 import com.example.demo.application.ports.output.external.RestaurantDataProviderPort;
+import com.example.demo.application.ports.output.monitoring.OrderMonitoringPort;
 import com.example.demo.application.dto.output.ProductDetailData;
 import com.example.demo.application.dto.saga.AuthorizePaymentCommandData;
 import com.example.demo.application.ports.input.CanceledOrderUseCase;
 import com.example.demo.application.ports.input.ConfirmOrderPaidUseCase;
 import com.example.demo.application.ports.input.UpdateOrderStatusUseCase;
-import com.example.common_dtos.enums.OrderStatus;
+import com.example.demo.domain.valueobject.order.OrderStatus;
 import com.example.demo.application.dto.command.CreateOrderItemCommand;
 import com.example.demo.application.ports.output.OrderPublisher.OrderEventPublisher;
 import com.example.demo.domain.entity.Order;
@@ -28,7 +29,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.example.common_dtos.enums.SagaStatus;
+import com.example.demo.domain.valueobject.saga.SagaStatus;
 import com.example.common_dtos.enums.Topics;
 
 @Slf4j
@@ -39,37 +40,45 @@ public class OrderOrchestratorService {
     private final ConfirmOrderPaidUseCase confirmOrderPaidUseCase;
     private final CanceledOrderUseCase canceledOrderUseCase;
     private final OrderRepositoryPort orderRepositoryPort;
-    private final java.util.Set<String> processedEvents = java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
-    private final java.util.Map<String, java.util.List<java.util.Map<String,Object>>> pendingItems = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Set<String> processedEvents = java.util.Collections
+            .newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
+    private final java.util.Map<String, java.util.List<java.util.Map<String, Object>>> pendingItems = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.Map<String, String> pendingRestaurant = new java.util.concurrent.ConcurrentHashMap<>();
     private final OrderRepositoryPort orderRepository;
     private final RestaurantDataProviderPort restaurantData;
     private final UpdateOrderStatusUseCase updateOrderStatus;
     private final OrderEventPublisher publisher;
     private final ObjectMapper om = new ObjectMapper();
+    private final OrderMonitoringPort orderMonitoringPort;
+
+    // === NEW: track saga đang active cho từng orderId để lọc reply “dư âm” ===
+    private final java.util.concurrent.ConcurrentHashMap<String, String> activeSagaByOrder = new java.util.concurrent.ConcurrentHashMap<>();
 
     // ===== Controller có thể truyền Long hoặc String =====
     public void startCreateOrderSagaFromCommand(String orderId,
-                                                Long restaurantId,
-                                                List<CreateOrderItemCommand> items) {
-        if (restaurantId == null) throw new IllegalArgumentException("restaurantId is required");
+            Long restaurantId,
+            List<CreateOrderItemCommand> items) {
+        if (restaurantId == null)
+            throw new IllegalArgumentException("restaurantId is required");
         startCreateOrderSagaFromCommand(orderId, String.valueOf(restaurantId), items);
     }
 
     public void startCreateOrderSagaFromCommand(String orderId,
-                                                String restaurantId,
-                                                List<CreateOrderItemCommand> items) {
-        if (orderId == null || orderId.isBlank()) throw new IllegalArgumentException("orderId is required");
-        if (restaurantId == null || restaurantId.isBlank()) throw new IllegalArgumentException("restaurantId is required");
-        if (items == null || items.isEmpty()) throw new IllegalArgumentException("items are required");
+            String restaurantId,
+            List<CreateOrderItemCommand> items) {
+        if (orderId == null || orderId.isBlank())
+            throw new IllegalArgumentException("orderId is required");
+        if (restaurantId == null || restaurantId.isBlank())
+            throw new IllegalArgumentException("restaurantId is required");
+        if (items == null || items.isEmpty())
+            throw new IllegalArgumentException("items are required");
 
         // Gom item trùng productId, bảo đảm quantity >= 1
         List<Map<String, Object>> itemsPayload = items.stream()
                 .collect(Collectors.groupingBy(
                         CreateOrderItemCommand::getProductId,
                         LinkedHashMap::new,
-                        Collectors.summingInt(i -> Optional.ofNullable(i.getQuantity()).orElse(0))
-                ))
+                        Collectors.summingInt(i -> Optional.ofNullable(i.getQuantity()).orElse(0))))
                 .entrySet().stream()
                 .map(e -> {
                     Map<String, Object> m = new LinkedHashMap<>();
@@ -87,10 +96,12 @@ public class OrderOrchestratorService {
         // validate input như cũ...
         pendingItems.put(orderId, itemsPayload);
         pendingRestaurant.put(orderId, restaurantId);
+
+        // NEW: tao sagaId và ghi nhận “active”
         String sagaId = UUID.randomUUID().toString();
+        activeSagaByOrder.put(orderId, sagaId);
+
         String corrId = UUID.randomUUID().toString();
-
-
         var amount = quoteTotal(restaurantId, itemsPayload);
 
         var env = SagaEnvelope.builder()
@@ -107,13 +118,15 @@ public class OrderOrchestratorService {
         String userIdHdr = resolveUserId(orderId);
         String paymentIdHdr = resolvePaymentId(orderId);
 
-        Map<String,String> headers = new LinkedHashMap<>();
+        Map<String, String> headers = new LinkedHashMap<>();
         headers.put("sagaId", sagaId);
         headers.put("correlationId", corrId);
         headers.put("replyTo", Topics.ORDER_SAGA_REPLY);
         headers.put("eventType", "AUTHORIZE_PAYMENT");
-        if (userIdHdr != null)    headers.put("userId", userIdHdr);
-        if (paymentIdHdr != null) headers.put("paymentId", paymentIdHdr);
+        if (userIdHdr != null)
+            headers.put("userId", userIdHdr);
+        if (paymentIdHdr != null)
+            headers.put("paymentId", paymentIdHdr);
 
         log.info("[SAGA->PAYMENT] (FIRST) topic={} key={} amount={} headers={} payload={}",
                 Topics.PAYMENT_AUTHORIZE_COMMAND, orderId, amount, headers, json);
@@ -124,7 +137,7 @@ public class OrderOrchestratorService {
             log.error("[SAGA] publish AUTHORIZE_PAYMENT failed. orderId={} err={}", orderId, ex.toString(), ex);
         }
 
-        //Sau khi payment OK, ta mới gửi VALIDATE_MENU_ITEMS trong onReply(...)
+        // Sau khi payment OK, ta mới gửi VALIDATE_MENU_ITEMS trong onReply(...)
     }
 
     @KafkaListener(topics = Topics.ORDER_SAGA_REPLY, groupId = "order-service-group")
@@ -144,6 +157,26 @@ public class OrderOrchestratorService {
                 return;
             }
 
+            // === NEW FILTER LAYER 1: key phải khớp orderId ===
+            String recordKey = rec.key();
+            if (recordKey != null && !recordKey.equals(orderId)) {
+                log.warn("[SAGA] Ignore reply: record.key={} != orderId={} (eventType={})", recordKey, orderId, event);
+                return;
+            }
+
+            // === NEW FILTER LAYER 2: sagaId header phải khớp saga đang active ===
+            String expected = activeSagaByOrder.get(orderId);
+            if (expected == null) {
+                log.warn("[SAGA] Ignore reply: no active saga for orderId={}, headerSaga={}, eventType={}", orderId,
+                        sagaId, event);
+                return;
+            }
+            if (sagaId == null || !expected.equals(sagaId)) {
+                log.warn("[SAGA] Ignore reply: mismatched sagaId for orderId={} expected={} actual={} (eventType={})",
+                        orderId, expected, sagaId, event);
+                return;
+            }
+
             SagaStatus sagaStatus = mapEventToSagaStatus(event);
             log.info("[SAGA<-REPLY] eventType={} sagaStatus={} sagaId={} orderId={} raw={}",
                     event, sagaStatus, sagaId, orderId, rec.value());
@@ -159,19 +192,24 @@ public class OrderOrchestratorService {
                         log.warn("[SAGA] setStatus(PAID) failed but skip re-consume. orderId={} err={}",
                                 orderId, ex.toString());
                     }
+                    System.out.println("rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr");
+                    orderMonitoringPort.recordOrderCreation("PAYMENT_AUTHORIZED");
                     callRestaurantValidate(rec, orderId);
+
                 }
                 case "PAYMENT_FAILED" -> {
-                    System.out.println("222222222222222222222222222222222222222");
                     try {
                         updateOrderStatus.setStatus(orderId, OrderStatus.CANCELLED);
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(CANCELLED) failed. orderId={} err={}", orderId, ex.toString());
                     }
                     cancelOrder(orderId, "payment failed");
+
+                    orderMonitoringPort.recordOrderCreation("PAYMENT_FAILED");
+                    activeSagaByOrder.remove(orderId);
+                    clearPending(orderId);
                 }
                 case "RESTAURANT_ITEMS_VALIDATED" -> {
-                    System.out.println("3333333333333333333333333333333333333333333333");
                     try {
                         updateOrderStatus.setStatus(orderId, OrderStatus.APPROVED);
                     } catch (Exception ex) {
@@ -180,13 +218,13 @@ public class OrderOrchestratorService {
                     callRestaurantStartPreparation(rec, orderId);
                 }
                 case "RESTAURANT_ITEMS_INVALID" -> {
-                    System.out.println("444444444444444444444444444444444444444444444444444");
-                    callPaymentCancel(rec, orderId, "menu invalid");
                     try {
+                        System.out.println("cancelinnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnng");
                         updateOrderStatus.setStatus(orderId, OrderStatus.CANCELLING);
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(CANCELLING) failed. orderId={} err={}", orderId, ex.toString());
                     }
+                    callPaymentCancel(rec, orderId, "menu invalid");
                 }
                 case "PAYMENT_REFUNDED", "PAYMENT_CANCELED" -> {
                     System.out.println("55555555555555555555555555555555555555555555555");
@@ -196,9 +234,12 @@ public class OrderOrchestratorService {
                         log.warn("[SAGA] setStatus(CANCELLED) failed. orderId={} err={}", orderId, ex.toString());
                     }
                     cancelOrder(orderId, "payment void/refund after invalid menu");
+                    orderMonitoringPort.recordOrderCreation("REFUNDED");
+
+                    activeSagaByOrder.remove(orderId);
+                    clearPending(orderId);
                 }
                 case "RESTAURANT_PREPARING" -> {
-                    System.out.println("333333333333333333333333333333333333333333");
                     try {
                         updateOrderStatus.setStatus(orderId, OrderStatus.PREPARING);
                     } catch (Exception ex) {
@@ -213,8 +254,10 @@ public class OrderOrchestratorService {
                     } catch (Exception ex) {
                         log.warn("[SAGA] setStatus(COMPLETED) failed. orderId={} err={}", orderId, ex.toString());
                     }
+                    orderMonitoringPort.recordOrderCreation("COMPLETED");
                     callRestaurantDeductStock(rec, orderId);
                     confirmOrder(orderId);
+
                 }
                 default -> {
                     log.warn("[SAGA] Unknown eventType={} for orderId={}, skip.", event, orderId);
@@ -223,56 +266,6 @@ public class OrderOrchestratorService {
         } catch (Exception e) {
             log.error("[SAGA] onReply crashed, skip re-consume. err={}", e.toString(), e);
         }
-    }
-
-    private void callPaymentAuthorize(ConsumerRecord<String,String> rec,
-                                      String orderId,
-                                      com.fasterxml.jackson.databind.JsonNode root) {
-        String sagaId = header(rec, "sagaId");
-
-        SagaEnvelope env = SagaEnvelope.builder()
-                .eventType("AUTHORIZE_PAYMENT")
-                .orderId(orderId)
-                .payload(Map.of("amount", root.path("payload").path("total").asText("0")))
-                .timestamp(Instant.now().toString())
-                .build();
-
-        String json = toJson(env);
-
-        // >>> THÊM userId/paymentId vào headers
-        String userIdHdr = resolveUserId(orderId);
-        String paymentIdHdr = resolvePaymentId(orderId);
-
-        Map<String, String> headers = new LinkedHashMap<>();
-        headers.put("sagaId", sagaId);
-        headers.put("correlationId", UUID.randomUUID().toString());
-        headers.put("replyTo", Topics.ORDER_SAGA_REPLY);
-        headers.put("eventType", "AUTHORIZE_PAYMENT");
-        if (userIdHdr != null)    headers.put("userId", userIdHdr);
-        if (paymentIdHdr != null) headers.put("paymentId", paymentIdHdr);
-
-        log.info("[SAGA->PAYMENT] topic={} key={} headers={} payload={}",
-                Topics.PAYMENT_AUTHORIZE_COMMAND, orderId, headers, json);
-
-        publisher.publish(Topics.PAYMENT_AUTHORIZE_COMMAND, orderId, json, headers);
-    }
-
-    private void confirmOrderPaid(OrderId orderId) {
-        Order order = orderRepositoryPort.findById(orderId);
-        if(order == null) {
-            log.warn("[IDEMPOTENCY] Order {} not found in DB during AUTHORIZED. Assuming it was deleted/finalized. Skipping.", orderId);
-            return;
-        }
-        if(order.getStatus() == OrderStatus.PAID) {
-            log.warn("[IDEMPOTENCY] Order {} is already Paid. Skipping redundant cancellation.", orderId);
-            return;
-        }
-        confirmOrderPaidUseCase.confirm(order);
-    }
-
-    private void cancelOrder(OrderId orderId) {
-        Order order = orderRepositoryPort.findById(orderId);
-        canceledOrderUseCase.canceled(order);
     }
 
     private void confirmOrder(String orderId) {
@@ -284,10 +277,11 @@ public class OrderOrchestratorService {
     }
 
     // ===== helpers =====
-    private String header(ConsumerRecord<?,?> rec, String key) {
+    private String header(ConsumerRecord<?, ?> rec, String key) {
         Header h = rec.headers().lastHeader(key);
         return h == null ? null : new String(h.value(), StandardCharsets.UTF_8);
     }
+
     private String toJson(Object o) {
         try {
             return om.writeValueAsString(o);
@@ -297,25 +291,25 @@ public class OrderOrchestratorService {
     }
 
     private SagaStatus mapEventToSagaStatus(String eventType) {
-        if (eventType == null) return SagaStatus.UNKNOWN;
+        if (eventType == null)
+            return SagaStatus.UNKNOWN;
         return switch (eventType) {
             case "RESTAURANT_ITEMS_VALIDATED" -> SagaStatus.RESTAURANT_VALIDATION_OK;
-            case "RESTAURANT_ITEMS_INVALID"   -> SagaStatus.RESTAURANT_VALIDATION_FAIL;
-            case "PAYMENT_AUTHORIZED"         -> SagaStatus.PAYMENT_AUTHORIZED;
-            case "PAYMENT_FAILED"             -> SagaStatus.PAYMENT_FAILED;
-            default                           -> SagaStatus.UNKNOWN;
+            case "RESTAURANT_ITEMS_INVALID" -> SagaStatus.RESTAURANT_VALIDATION_FAIL;
+            case "PAYMENT_AUTHORIZED" -> SagaStatus.PAYMENT_AUTHORIZED;
+            case "PAYMENT_FAILED" -> SagaStatus.PAYMENT_FAILED;
+            default -> SagaStatus.UNKNOWN;
         };
     }
 
-    private void callRestaurantStartPreparation(ConsumerRecord<String,String> rec, String orderId) {
+    private void callRestaurantStartPreparation(ConsumerRecord<String, String> rec, String orderId) {
         String sagaId = header(rec, "sagaId");
 
         Map<String, Object> env = Map.of(
                 "eventType", "START_PREPARATION",
                 "orderId", orderId,
                 "payload", Map.of(),
-                "timestamp", Instant.now().toString()
-        );
+                "timestamp", Instant.now().toString());
         String json = toJson(env);
 
         Map<String, String> headers = new LinkedHashMap<>();
@@ -330,15 +324,14 @@ public class OrderOrchestratorService {
         publisher.publish(Topics.RESTAURANT_FULFILL_COMMAND, orderId, json, headers);
     }
 
-    private void callRestaurantCompleteOrder(ConsumerRecord<String,String> rec, String orderId) {
+    private void callRestaurantCompleteOrder(ConsumerRecord<String, String> rec, String orderId) {
         String sagaId = header(rec, "sagaId");
 
         Map<String, Object> env = Map.of(
                 "eventType", "COMPLETE_ORDER",
                 "orderId", orderId,
                 "payload", Map.of(),
-                "timestamp", Instant.now().toString()
-        );
+                "timestamp", Instant.now().toString());
         String json = toJson(env);
 
         Map<String, String> headers = new LinkedHashMap<>();
@@ -353,14 +346,16 @@ public class OrderOrchestratorService {
         publisher.publish(Topics.RESTAURANT_FULFILL_COMMAND, orderId, json, headers);
     }
 
-    private void callRestaurantValidate(org.apache.kafka.clients.consumer.ConsumerRecord<String,String> rec, String orderId) {
+    private void callRestaurantValidate(org.apache.kafka.clients.consumer.ConsumerRecord<String, String> rec,
+            String orderId) {
         String sagaId = header(rec, "sagaId");
         try {
             String restaurantId = pendingRestaurant.get(orderId);
             var itemsPayload = pendingItems.get(orderId);
 
             if (restaurantId == null) {
-                var order = orderRepository.findById(new com.example.demo.domain.valueobject.order.OrderId(Long.valueOf(orderId)));
+                var order = orderRepository
+                        .findById(new com.example.demo.domain.valueobject.order.OrderId(Long.valueOf(orderId)));
                 restaurantId = String.valueOf(order.getRestaurantId().value());
             }
             if (itemsPayload == null || itemsPayload.isEmpty()) {
@@ -369,20 +364,19 @@ public class OrderOrchestratorService {
 
             log.info("[SAGA] VALIDATE using restaurantId={} items={}", restaurantId, itemsPayload);
 
-            var env = new java.util.LinkedHashMap<String,Object>();
+            var env = new java.util.LinkedHashMap<String, Object>();
             env.put("eventType", "VALIDATE_MENU_ITEMS");
             env.put("orderId", orderId);
             env.put("restaurantId", restaurantId);
             env.put("payload", java.util.Map.of(
                     "restaurantId", restaurantId,
                     "items", itemsPayload,
-                    "checkStock", true
-            ));
+                    "checkStock", true));
             env.put("timestamp", java.time.Instant.now().toString());
 
             String json = toJson(env);
 
-            java.util.Map<String,String> headers = new LinkedHashMap<>();
+            java.util.Map<String, String> headers = new LinkedHashMap<>();
             headers.put("sagaId", sagaId == null ? java.util.UUID.randomUUID().toString() : sagaId);
             headers.put("correlationId", java.util.UUID.randomUUID().toString());
             headers.put("replyTo", com.example.common_dtos.enums.Topics.ORDER_SAGA_REPLY);
@@ -403,27 +397,28 @@ public class OrderOrchestratorService {
         pendingRestaurant.remove(orderId);
     }
 
-    private void callPaymentCancel(ConsumerRecord<String,String> rec, String orderId, String reason) {
+    private void callPaymentCancel(ConsumerRecord<String, String> rec, String orderId, String reason) {
         String sagaId = header(rec, "sagaId");
         var env = Map.of(
                 "eventType", "CANCEL_AUTHORIZATION",
                 "orderId", orderId,
                 "payload", Map.of("reason", reason),
-                "timestamp", Instant.now().toString()
-        );
+                "timestamp", Instant.now().toString());
         String json = toJson(env);
 
         // >>> THÊM userId/paymentId vào headers
         String userIdHdr = resolveUserId(orderId);
         String paymentIdHdr = resolvePaymentId(orderId);
 
-        Map<String,String> headers = new LinkedHashMap<>();
+        Map<String, String> headers = new LinkedHashMap<>();
         headers.put("sagaId", sagaId == null ? UUID.randomUUID().toString() : sagaId);
         headers.put("correlationId", UUID.randomUUID().toString());
         headers.put("replyTo", Topics.ORDER_SAGA_REPLY);
         headers.put("eventType", "CANCEL_AUTHORIZATION");
-        if (userIdHdr != null)    headers.put("userId", userIdHdr);
-        if (paymentIdHdr != null) headers.put("paymentId", paymentIdHdr);
+        if (userIdHdr != null)
+            headers.put("userId", userIdHdr);
+        if (paymentIdHdr != null)
+            headers.put("paymentId", paymentIdHdr);
 
         log.info("[SAGA->PAYMENT] CANCEL_AUTHORIZATION topic={} key={} headers={} payload={}",
                 Topics.PAYMENT_CANCEL_COMMAND, orderId, headers, json);
@@ -431,14 +426,13 @@ public class OrderOrchestratorService {
         publisher.publish(Topics.PAYMENT_CANCEL_COMMAND, orderId, json, headers);
     }
 
-    private java.math.BigDecimal quoteTotal(String restaurantId, java.util.List<java.util.Map<String,Object>> itemsPayload) {
+    private java.math.BigDecimal quoteTotal(String restaurantId,
+            java.util.List<java.util.Map<String, Object>> itemsPayload) {
         var ids = itemsPayload.stream()
                 .map(m -> Long.valueOf(String.valueOf(m.get("productId"))))
                 .toList();
 
-
-        java.util.List<ProductDetailData> details =
-                restaurantData.getProducts(Long.valueOf(restaurantId), ids);
+        java.util.List<ProductDetailData> details = restaurantData.getProducts(Long.valueOf(restaurantId), ids);
 
         var priceById = new java.util.HashMap<Long, java.math.BigDecimal>();
         if (details != null) {
@@ -452,7 +446,7 @@ public class OrderOrchestratorService {
         java.math.BigDecimal total = java.math.BigDecimal.ZERO;
         for (var m : itemsPayload) {
             Long pid = Long.valueOf(String.valueOf(m.get("productId")));
-            int qty  = Integer.parseInt(String.valueOf(m.get("quantity")));
+            int qty = Integer.parseInt(String.valueOf(m.get("quantity")));
             var price = priceById.getOrDefault(pid, java.math.BigDecimal.ZERO);
             total = total.add(price.multiply(java.math.BigDecimal.valueOf(qty)));
         }
@@ -461,8 +455,7 @@ public class OrderOrchestratorService {
 
     private List<Map<String, Object>> buildItemsPayloadFromOrder(String orderId) {
         var order = orderRepository.findById(
-                new com.example.demo.domain.valueobject.order.OrderId(Long.valueOf(orderId))
-        );
+                new com.example.demo.domain.valueobject.order.OrderId(Long.valueOf(orderId)));
         if (order == null || order.getItems() == null || order.getItems().isEmpty()) {
             log.warn("[SAGA] No items found for orderId={} when building payload", orderId);
             return java.util.List.of();
@@ -480,7 +473,8 @@ public class OrderOrchestratorService {
                         try {
                             var m2 = v.getClass().getMethod("value");
                             Object idVal = m2.invoke(v);
-                            if (idVal != null) pid = Long.valueOf(String.valueOf(idVal));
+                            if (idVal != null)
+                                pid = Long.valueOf(String.valueOf(idVal));
                         } catch (NoSuchMethodException ignore) {
                             pid = Long.valueOf(String.valueOf(v));
                         }
@@ -501,7 +495,8 @@ public class OrderOrchestratorService {
                                 try {
                                     var mVal = pidObj.getClass().getMethod("value");
                                     Object idVal = mVal.invoke(pidObj);
-                                    if (idVal != null) pid = Long.valueOf(String.valueOf(idVal));
+                                    if (idVal != null)
+                                        pid = Long.valueOf(String.valueOf(idVal));
                                 } catch (NoSuchMethodException e3) {
                                     pid = Long.valueOf(String.valueOf(pidObj));
                                 }
@@ -516,7 +511,8 @@ public class OrderOrchestratorService {
                 try {
                     var mQty = oi.getClass().getMethod("getQuantity");
                     Object q = mQty.invoke(oi);
-                    if (q != null) qty = Integer.valueOf(String.valueOf(q));
+                    if (q != null)
+                        qty = Integer.valueOf(String.valueOf(q));
                 } catch (NoSuchMethodException e) {
                     log.debug("[SAGA] No getQuantity() on item, default=1");
                 }
@@ -536,7 +532,7 @@ public class OrderOrchestratorService {
         return items;
     }
 
-    private void callRestaurantDeductStock(ConsumerRecord<String,String> rec, String orderId) {
+    private void callRestaurantDeductStock(ConsumerRecord<String, String> rec, String orderId) {
         String sagaId = header(rec, "sagaId");
         try {
             // lấy items từ cache; thiếu thì dựng lại từ DB
@@ -566,6 +562,8 @@ public class OrderOrchestratorService {
 
             // sau khi deduct thì có thể clear cache tạm
             clearPending(orderId);
+            // NEW: có thể coi như xong vòng đời
+            activeSagaByOrder.remove(orderId);
         } catch (Throwable ex) {
             log.error("[SAGA] callRestaurantDeductStock failed for orderId={} err={}", orderId, ex.toString(), ex);
         }
@@ -575,45 +573,49 @@ public class OrderOrchestratorService {
     private String resolveUserId(String orderId) {
         try {
             var order = orderRepository.findById(
-                    new com.example.demo.domain.valueobject.order.OrderId(Long.valueOf(orderId))
-            );
-            if (order == null) return null;
+                    new com.example.demo.domain.valueobject.order.OrderId(Long.valueOf(orderId)));
+            if (order == null)
+                return null;
 
             // thử getUserId()
             try {
                 var m = order.getClass().getMethod("getUserId");
                 Object v = m.invoke(order);
-                if (v != null) return String.valueOf(
-                        v.getClass().getMethod("value").invoke(v)
-                );
-            } catch (NoSuchMethodException ignore) {}
+                if (v != null)
+                    return String.valueOf(
+                            v.getClass().getMethod("value").invoke(v));
+            } catch (NoSuchMethodException ignore) {
+            }
 
             // thử getCustomerId()
             try {
                 var m = order.getClass().getMethod("getCustomerId");
                 Object v = m.invoke(order);
-                if (v != null) return String.valueOf(
-                        v.getClass().getMethod("value").invoke(v)
-                );
-            } catch (NoSuchMethodException ignore) {}
+                if (v != null)
+                    return String.valueOf(
+                            v.getClass().getMethod("value").invoke(v));
+            } catch (NoSuchMethodException ignore) {
+            }
 
             // fallback: field userId / customerId
             try {
                 var f = order.getClass().getDeclaredField("userId");
                 f.setAccessible(true);
                 Object v = f.get(order);
-                if (v != null) return String.valueOf(
-                        v.getClass().getMethod("value").invoke(v)
-                );
-            } catch (NoSuchFieldException ignore) {}
+                if (v != null)
+                    return String.valueOf(
+                            v.getClass().getMethod("value").invoke(v));
+            } catch (NoSuchFieldException ignore) {
+            }
             try {
                 var f = order.getClass().getDeclaredField("customerId");
                 f.setAccessible(true);
                 Object v = f.get(order);
-                if (v != null) return String.valueOf(
-                        v.getClass().getMethod("value").invoke(v)
-                );
-            } catch (NoSuchFieldException ignore) {}
+                if (v != null)
+                    return String.valueOf(
+                            v.getClass().getMethod("value").invoke(v));
+            } catch (NoSuchFieldException ignore) {
+            }
 
         } catch (Throwable ex) {
             log.debug("[SAGA] resolveUserId failed for orderId={} err={}", orderId, ex.toString());
@@ -624,9 +626,9 @@ public class OrderOrchestratorService {
     private String resolvePaymentId(String orderId) {
         try {
             var order = orderRepository.findById(
-                    new com.example.demo.domain.valueobject.order.OrderId(Long.valueOf(orderId))
-            );
-            if (order == null) return null;
+                    new com.example.demo.domain.valueobject.order.OrderId(Long.valueOf(orderId)));
+            if (order == null)
+                return null;
 
             // nếu Order có paymentId:
             try {
@@ -640,7 +642,8 @@ public class OrderOrchestratorService {
                         return String.valueOf(v);
                     }
                 }
-            } catch (NoSuchMethodException ignore) {}
+            } catch (NoSuchMethodException ignore) {
+            }
 
             // hoặc có getPayment().getId()
             try {
@@ -662,7 +665,8 @@ public class OrderOrchestratorService {
                         }
                     }
                 }
-            } catch (NoSuchMethodException ignore) {}
+            } catch (NoSuchMethodException ignore) {
+            }
 
         } catch (Throwable ex) {
             log.debug("[SAGA] resolvePaymentId failed for orderId={} err={}", orderId, ex.toString());
@@ -670,4 +674,3 @@ public class OrderOrchestratorService {
         return null; // không có cũng OK, payment-service đã có find-or-create
     }
 }
-

@@ -6,6 +6,7 @@ import com.example.user_service.application.dto.command.RegisterCommand;
 import com.example.user_service.application.dto.output.UserResponse;
 import com.example.user_service.application.mapper.UserMapper;
 import com.example.user_service.application.ports.input.RegisterUseCase;
+import com.example.user_service.application.ports.output.PasswordEncoderPort;
 import com.example.user_service.application.ports.output.repository.RoleRepositoryPort;
 import com.example.user_service.application.ports.output.repository.UserRepositoryPort;
 import com.example.user_service.domain.entity.Role;
@@ -19,10 +20,13 @@ public class RegisterUseCaseImpl implements RegisterUseCase {
     private final UserRepositoryPort userRepositoryPort;
     private final RoleRepositoryPort roleRepositoryPort;
     private final UserMapper userMapper;
+    private final PasswordEncoderPort passwordEncoderPort;
     public UserResponse register(RegisterCommand command) {
 
         Role defaultRole = roleRepositoryPort.findById(command.getRoleId())
                             .orElseThrow(() -> new IllegalArgumentException("Role ID không hợp lệ hoặc không tồn tại."));
+        String encodedPassword = passwordEncoderPort.encode(command.getPassword());
+        command.setPassword(encodedPassword);
         User user = userMapper.toDomain(command, defaultRole);
         System.out.println("defaultRole" + defaultRole);
         User savedUser = userRepositoryPort.save(user);

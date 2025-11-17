@@ -20,13 +20,9 @@ public class KafkaErrorHandlerConfig {
                 (record, ex) -> new TopicPartition(record.topic() + ".DLT", record.partition())
         );
 
-        // 2) Backoff: retry 3 lần, mỗi lần cách nhau 1s (tuỳ bạn chỉnh)
         FixedBackOff backOff = new FixedBackOff(1000L, 3L);
 
         DefaultErrorHandler handler = new DefaultErrorHandler(recoverer, backOff);
-
-        // 3) (Tùy chọn) đánh dấu 1 số lỗi là non-retryable -> đi thẳng DLQ
-        // handler.addNotRetryableExceptions(IllegalArgumentException.class);
 
         return handler;
     }

@@ -66,7 +66,6 @@ public class RestaurantFulfillmentListener {
                 }
                 log.info("[RESTAURANT] DEDUCT_STOCK request items={}", items);
                 deductStockUseCase.deduct(items); // ✅ gọi vào domain/service trừ kho
-
                 // gửi reply về saga nếu cần
                 reply(replyTo, orderId, sagaId, "STOCK_DEDUCTED", Map.of(
                         "status", "OK",

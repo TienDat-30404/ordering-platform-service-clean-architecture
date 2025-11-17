@@ -44,7 +44,7 @@ public class ValidateMenuItemUseCaseImpl implements ValidateMenuItemUseCase {
             }
             return responses;
         }
-        System.out.println("restautantOpt" + restaurantOpt);
+   
         Restaurant restaurant = restaurantOpt.get();
         
         // 2. Tối ưu hóa: Chuyển List thành Map. (O(N) initial cost)

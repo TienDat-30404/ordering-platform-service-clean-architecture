@@ -7,9 +7,9 @@ public record PaymentResponseData(
         Long paymentId,
         Long orderId,
         Long userId,
-        String status, // "AUTHORIZED" hoặc "FAILED"
+        String status, 
         BigDecimal amount,
         String transactionId,
-        String reason // Lý do thất bại (nếu có)
+        String reason 
 ) {
 }

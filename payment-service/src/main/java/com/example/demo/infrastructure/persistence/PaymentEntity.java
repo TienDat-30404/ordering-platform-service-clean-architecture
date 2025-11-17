@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import com.example.common_dtos.enums.PaymentStatus;
+import com.example.demo.domain.valueobject.PaymentStatus;
 
 @Entity
 @Table(name = "payments")

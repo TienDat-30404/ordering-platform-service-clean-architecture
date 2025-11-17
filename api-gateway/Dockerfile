@@ -30,4 +30,37 @@ EXPOSE 8079
 # <CHANGE> Chạy với mvn spring-boot:run để hỗ trợ hot reload
 ENV MAVEN_OPTS="-Dspring-boot.run.fork=false"
 WORKDIR /build/api-gateway
-CMD ["mvn", "spring-boot:run"]  
+CMD ["mvn", "spring-boot:run"] 
+
+
+
+
+
+
+# # GIAI ĐOẠN 1: BUILDER (Dùng để biên dịch)
+# FROM maven:3.9-eclipse-temurin-21 AS builder 
+# WORKDIR /build
+
+# COPY pom.xml ./
+
+# COPY api-gateway ./api-gateway
+# COPY common-dtos ./common-dtos 
+
+# RUN mvn install -N -B 
+
+
+# RUN cd api-gateway && \
+#     mvn clean package -am -DskipTests -B
+# # ----------------------------------------------------
+
+# # GIAI ĐOẠN 2: RUNTIME (Production Optimized)
+# FROM eclipse-temurin:21-jre-alpine
+
+# # Thiết lập thư mục làm việc
+# WORKDIR /app
+
+# COPY --from=builder /build/api-gateway/target/*.jar app.jar
+
+# EXPOSE 8079
+
+# ENTRYPOINT ["java", "-jar", "app.jar"]

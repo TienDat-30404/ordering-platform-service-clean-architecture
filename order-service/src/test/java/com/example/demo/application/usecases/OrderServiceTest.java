@@ -6,8 +6,7 @@
 // import com.example.demo.domain.entity.Order;
 // import com.example.demo.domain.entity.OrderItem; // Cần import OrderItem để tạo Order
 // import com.example.demo.domain.valueobject.order.OrderId;
-// import com.example.demo.domain.valueobject.order.RestaurantId;
-// import com.example.common_dtos.enums.OrderStatus;
+// import com.example.demo.domain.valueobject.order.OrderStatus;
 // import com.example.demo.domain.valueobject.user.UserId;
 // import org.junit.jupiter.api.Test;
 // import org.junit.jupiter.api.extension.ExtendWith;

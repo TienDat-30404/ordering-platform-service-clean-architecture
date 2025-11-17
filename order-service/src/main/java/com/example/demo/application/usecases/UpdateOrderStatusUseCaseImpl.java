@@ -1,6 +1,6 @@
 package com.example.demo.application.usecases;
 
-import com.example.common_dtos.enums.OrderStatus;
+import com.example.demo.domain.valueobject.order.OrderStatus;
 import com.example.demo.application.ports.input.UpdateOrderStatusUseCase;
 import com.example.demo.application.ports.output.repository.OrderRepositoryPort;
 import lombok.RequiredArgsConstructor;

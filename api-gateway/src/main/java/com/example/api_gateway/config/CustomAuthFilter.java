@@ -28,7 +28,7 @@ public class CustomAuthFilter implements WebFilter, Ordered {
 
     private static final Logger log = LoggerFactory.getLogger(CustomAuthFilter.class);
 
-    @Value("${jwt.secret:}")
+    @Value("${jwt.secret}")
     private String jwtSecret;
 
     // Cho phép các service nội bộ gọi qua header này (đã cấu hình trong routes)
@@ -56,25 +56,20 @@ public class CustomAuthFilter implements WebFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
         HttpMethod method = request.getMethod();
-
+        System.out.println("22222222222222222222222222222");
         // === LOG NHANH: xem có header Authorization/X-Internal-Token hay không
         String auth = request.getHeaders().getFirst("Authorization");
-        String internalHdr = request.getHeaders().getFirst("X-Internal-Tokehuhhjn");
+        String internalHdr = request.getHeaders().getFirst("X-Internal-Token");
         String methodStr = (method != null ? method.name() : "UNKNOWN");
         System.out.println("internalTokennnnnnnnnnnnnnnnnnnnnnn" + internalToken);
-        System.out.println("internalHdrrrrrrrrrrrrrrrrrrrr" + internalHdr);
-        log.debug("[GatewayAuth] {} {} | Authorization={} | X-Internal-Token={}",
-                methodStr,
-                path,
-                (auth == null ? "null" : (auth.length() > 30 ? auth.substring(0,30) + "..." : auth)),
-                internalHdr);
+                System.out.println("mmmmmmmmmmmmmmmmmmmmmmm" + jwtSecret);
 
+        System.out.println("internalHdrrrrrrrrrrrrrrrrrrrr" + internalHdr);
         // 1) CORS preflight
         if (HttpMethod.OPTIONS.equals(method)) {
             return chain.filter(exchange);
         }
 
-        // 2) Public paths
         if (isPublicPath(path)) {
             return chain.filter(exchange);
         }
@@ -84,7 +79,6 @@ public class CustomAuthFilter implements WebFilter, Ordered {
             return chain.filter(exchange);
         }
      
-        // 4) JWT
         final String authHeader = auth; // dùng lại biến đã lấy bên trên
         if (authHeader == null || !authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
             log.debug("Missing/invalid Authorization on {}", path);
@@ -93,7 +87,7 @@ public class CustomAuthFilter implements WebFilter, Ordered {
         }
 
         String token = authHeader.substring(7).trim();
-
+        
         try {
             if (jwtSecret == null || jwtSecret.isBlank()) {
                 log.error("jwt.secret is empty -> cannot verify JWT");
@@ -102,8 +96,11 @@ public class CustomAuthFilter implements WebFilter, Ordered {
             }
 
             Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
+            System.out.println("algorithmmmmmmmmmmmmmmmmmmmmmm" + algorithm);
             JWTVerifier verifier = JWT.require(algorithm).build();
+            System.out.println("verufuerrrrrrrrrrrrrrrrrrr" + verifier);
             DecodedJWT jwt = verifier.verify(token);
+            System.out.println("jwtttttttttttttttttttttttt" + jwt);
 
             String userId = jwt.getSubject();
             String role = jwt.getClaim("role") != null ? jwt.getClaim("role").asString() : "";
